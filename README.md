@@ -49,21 +49,27 @@ A mesma regra aparece no painel de indicadores.
 
 ## Villa Flora II
 
-Vem cadastrado na primeira abertura, com avanços zerados:
+Vem cadastrado na primeira abertura, com avanços zerados. A estrutura foi extraída do PDF `Villa Flora II - Desenho Plano de Ataque_R02.pdf` pelo script `tools/extrair_villaflora.py`, e as áreas vêm do quadro de áreas de `1002.ARQ.EX.0001.IMP-R01.pdf`:
 
-- 66 ranks de 3 casas = 198 casas, numeradas de 001 a 198 em sequência por rank (R01 = casas 001 a 003).
-- 12 áreas comuns: guarita, salão de festas, piscinas adulto e infantil, academia, brinquedoteca, churrasqueira, playground, pet place, reservatório e depósitos.
-- 5 vias (ruas A a D e avenida de acesso) com etapas de infraestrutura por quantidade.
-- Os documentos `1002.ARQ.EX.0001.IMP-R01.pdf` e `Villa Flora II - Desenho Plano de Ataque_R02.pdf` aparecem como pendentes em **Documentos**, para você anexar.
+- **3 fases**, como na legenda: Fase I com 84 casas e as áreas comuns (ranks 01–28), Fase II com 54 (ranks 29–46) e Fase III com 60 (ranks 47–66). Total de 198 casas.
+- **18 trechos** de ataque, lidos no desenho. Fase I: T01 = R01–04, T02 = R05–08, T03 = R09–13, T04 = R14–18, T05 = R19–24, T06 = R25–26, T07 = R27–28, T08 = reservatório e T09 = estacionamento central. Fase II: T10 = R29–31, T11 = R32–38, T12 = R39–44 e T13 = R45–46. Fase III: T14 = R47–51, T15 = R52–57, T16 = R58–62, T17 = R63–66 e T18 = estacionamento sul.
+- **Numeração real das casas**, com 3 números consecutivos por rank. Por exemplo, o Rank 01 tem as casas 145 a 147.
+- **Posições na escala do desenho.** As vagas de 2,30 m ficam a cada 12,216 pt, o que dá 5,311 pt/m. Por essa escala o terreno fica com cerca de 21.800 m², contra 21.699,05 m² no quadro de áreas.
+- **14 áreas comuns**, com as áreas do quadro: salão de festas 92,98 m², churrasqueira 22,31 m², brinquedoteca 49,29 m², sala de ginástica 49,29 m², guarita 21,08 m², serviços 34,78 m², depósito de lixo 20,51 m² e reservatório d'água 12,57 m². Também entram piscinas, dois playgrounds, fitness 3ª idade, pet place e reservatório de retenção.
+- **5 trechos de estacionamento e circulação**, com quantidades calculadas pelas dimensões.
+- **Peso de cada casa = área privativa.** São 66 térreas de 44,28 m², a casa do meio de cada rank (a legenda indica casas 01 e 03 como sobrado), e 132 sobrados de 55,5 m² em média.
+- **Planta do Plano de Ataque já posicionada** como base do 3D, para conferência visual.
 
-**A validar:** os dois PDFs não estavam disponíveis quando a plataforma foi construída. Por isso o modelo está marcado como esquemático:
+**A validar:**
 
-- a divisão das fases é provisória (F1 = R01–R22, F2 = R23–R44, F3 = R45–R66);
-- a numeração das casas e a posição dos ranks e das áreas comuns seguem uma grade padrão, não a implantação.
+- **Profundidade das casas.** Foi estimada pela área: 8,4 m na térrea e 7,0 m no sobrado.
+- **Os 8 sobrados de 3 dormitórios.** O quadro de áreas não diz quais casas são. Ajuste o peso dessas 8 para 65,63 m².
+- **Áreas comuns em limite de trecho.** A brinquedoteca (T09) e o playground norte (T03) ficam entre trechos e foram atribuídos por proximidade.
+- **Dimensões das áreas comuns sem área no quadro.** Piscinas, playgrounds, pet place, fitness e retenção foram medidos no desenho.
 
-Ao anexar a implantação, marque “usar como planta”, ajuste escala e posição, e corrija fases, numeração e posições pela aba **Estrutura e propriedades** (mover para outro grupo, renumerar, ajustar X/Z/rotação ou arrastar na cena).
+Quem já tinha aberto a versão provisória: sem lançamentos, a obra é refeita automaticamente pelo R02. Com lançamentos, ela é mantida e uma nova obra "Villa Flora II (Plano de Ataque R02)" é criada ao lado.
 
-Os pesos das etapas são um padrão provisório (Terraplenagem 5, Fundações 10, Estrutura 15, Alvenaria 20, Cobertura 12, Instalações 15, Acabamentos 18, Paisagismo 5). Ajuste em **Etapas** conforme o orçamento da obra.
+Os pesos das etapas continuam provisórios (Terraplenagem 5, Fundações 10, Estrutura 15, Alvenaria 20, Cobertura 12, Instalações 15, Acabamentos 18, Paisagismo 5). Ajuste em **Etapas** conforme o orçamento.
 
 ## Onde os dados ficam
 
@@ -82,7 +88,7 @@ npm run build && npm run e2e
 ```
 
 - `test/calc.test.mjs`: 14 testes do núcleo de cálculo (acumulação, mês sem lançamento, salvar duas vezes, correção retroativa, limites 0–100%, quantidade, coletivo sem dupla contagem, conclusão, limpeza, duplicação, período, comparação entre meses).
-- `test/e2e.mjs`: 77 verificações no navegador, cobrindo cada item da lista de entrega: independência entre obras, lançamento individual e coletivo, acumulação, correção, persistência após recarregar, ✓, áreas comuns e infraestrutura, exportação e importação, planilha, limpeza, mouse, toque e primeira pessoa.
+- `test/e2e.mjs`: 78 verificações no navegador, cobrindo cada item da lista de entrega: independência entre obras, lançamento individual e coletivo, acumulação, correção, persistência após recarregar, ✓, áreas comuns e infraestrutura, exportação e importação, planilha, limpeza, mouse, toque e primeira pessoa.
 
 ## Limitações conhecidas
 
@@ -95,6 +101,8 @@ npm run build && npm run e2e
 ```
 src/calc.js     núcleo de cálculo (sem interface)
 src/model.js    modelos, etapas padrão, geradores de estrutura, Villa Flora II
+src/villaflora-r02.js, villaflora-planta.js   dados e planta gerados do Plano de Ataque R02
+tools/extrair_villaflora.py   extração a partir do PDF
 src/store.js    gravação local (IndexedDB)
 src/scene.js    cena 3D (three.js): desenho por etapa, modos, seleção, caminhada
 src/app.js      estado, troca de obras, gravação automática, linha do tempo

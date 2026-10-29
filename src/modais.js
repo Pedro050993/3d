@@ -6,7 +6,7 @@ import * as S from './store.js';
 import { fmtMes, mesesEntre, mesDe } from './meses.js';
 import { $, $$, esc, num, pct, lerNum, dataHora, tamanho, baixar, nomeArquivo, dialogo, confirmar, toast, escolherArquivo, lerArquivoTexto } from './util.js';
 import { gerarXlsx } from './xlsx.js';
-import { app, mutar, abrirObra, recarregarIndice, salvarAgora, atualizarPlanta, renderTudo } from './app.js';
+import { app, mutar, abrirObra, recarregarIndice, salvarAgora, atualizarPlanta, renderTudo, novaVillaFlora } from './app.js';
 import { rotCategoria } from './paineis.js';
 
 // ---------------------------------------------------------------- obras
@@ -100,7 +100,7 @@ export async function modalNovaObra() {
       <h4>Estrutura inicial</h4>
       <label class="radio"><input type="radio" name="nEst" value="gerar" checked> Gerar automaticamente</label>
       <label class="radio"><input type="radio" name="nEst" value="vazia"> Começar vazia (cadastro manual)</label>
-      <label class="radio"><input type="radio" name="nEst" value="villa"> Usar o modelo do Villa Flora II (66 ranks × 3 casas)</label>
+      <label class="radio"><input type="radio" name="nEst" value="villa"> Usar o Villa Flora II pelo Plano de Ataque R02 (66 ranks × 3 casas, 3 fases, 18 trechos)</label>
       <div id="nGer">${camposGerador('condominio')}</div>
       <p class="dica">A obra nova começa com avanços zerados. Etapas, quantidades e posições podem ser ajustadas depois.</p><p class="erro" id="dlgErro"></p>`,
     botoes: [{ rotulo: 'Cancelar', valor: null }, { rotulo: 'Criar obra', valor: 'ok' }],
@@ -148,7 +148,7 @@ export async function modalNovaObra() {
   if (!r) return;
   let o;
   if (r.est === 'villa') {
-    o = M.criarVillaFlora();
+    o = await novaVillaFlora();
     o.nome = r.nome;
     o.inicio = r.ini;
     o.termino = r.fim;

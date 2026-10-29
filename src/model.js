@@ -1,6 +1,7 @@
 // Modelos de obra, etapas padrão, geradores de estrutura e o preset do Villa Flora II.
 
 import { uid } from './calc.js';
+import { VF_R02 } from './villaflora-r02.js';
 
 export const SCHEMA = 1;
 
@@ -481,18 +482,65 @@ export function gerarOutro(obra, { setores = 2, blocosPorSetor = 3, frentesPorBl
 
 export const VILLA_FLORA_DOCS = ['1002.ARQ.EX.0001.IMP-R01.pdf', 'Villa Flora II - Desenho Plano de Ataque_R02.pdf'];
 
+// Estrutura extraída do Plano de Ataque R02 (tools/extrair_villaflora.py):
+// fases, trechos, ranks, numeração real das casas, posições e áreas comuns.
+const ROMANO = ['I', 'II', 'III'];
+const pad = (n, k) => String(n).padStart(k, '0');
+
 export function criarVillaFlora() {
   const o = obraVazia({
     nome: 'Villa Flora II',
     tipo: 'condominio',
-    descricao: 'Condomínio horizontal com 66 ranks de 3 casas (198 casas). Modelo esquemático: posição, numeração e distribuição das fases devem ser conferidas contra a implantação (1002.ARQ.EX.0001.IMP-R01) e o Plano de Ataque R02.',
+    descricao: 'Villa Flora Americana · Condomínio das Azaleias. 66 ranks de casas geminadas 3 a 3 (198 casas) em 3 fases e 18 trechos, conforme o Plano de Ataque R02. Áreas pelo quadro de áreas da implantação 1002.ARQ.EX.0001.IMP-R01.',
     inicio: '2026-01-01',
     termino: '2028-06-30',
   });
-  // Distribuição de fases provisória (22 ranks por fase) até a conferência do Plano de Ataque.
-  gerarCondominio(o, { fases: 3, ranksPorFase: [22, 22, 22], casasPorRank: 3, ranksPorFileira: 11 });
+  o.etapas.push(...criarEtapas(ETAPAS_CASA));
+  o.etapas.push(...criarEtapas(ETAPAS_ANEXO).map((x, i) => ({ ...x, ordem: 100 + i })));
+  o.etapas.push(...criarEtapas(ETAPAS_INFRA).map((x, i) => ({ ...x, ordem: 200 + i })));
+  const D = VF_R02;
+  const els = [];
+  const fases = [1, 2, 3].map((f) => {
+    const n = D.ranks.filter((r) => r.fase === f).length * 3;
+    const e = elem({ classe: 'grupo', categoria: 'fase', nome: `Fase ${ROMANO[f - 1]}`, codigo: `F${f}`, ordem: f });
+    e.obs = `${n} unidades${f === 1 ? ' + áreas comuns' : ''}`;
+    els.push(e);
+    return e;
+  });
+  const faseDoTrecho = (t) => (t <= 9 ? 1 : t <= 13 ? 2 : 3);
+  const trechos = new Map();
+  for (let t = 1; t <= 18; t++) {
+    const e = elem({ classe: 'grupo', categoria: 'trecho', nome: `Trecho ${pad(t, 2)}`, codigo: `T${pad(t, 2)}`, paiId: fases[faseDoTrecho(t) - 1].id, ordem: t });
+    trechos.set(t, e);
+    els.push(e);
+  }
+  const ranks = new Map();
+  for (const r of D.ranks) {
+    const e = elem({ classe: 'grupo', categoria: 'rank', nome: `Rank ${pad(r.n, 2)}`, codigo: `R${pad(r.n, 2)}`, paiId: trechos.get(r.trecho).id, x: r.pos[0], z: r.pos[1], ordem: r.n });
+    ranks.set(r.n, e);
+    els.push(e);
+  }
+  // térrea 44,28 m² (meio do rank) e sobrados de 2 dormitórios (média 55,5 m²) pelo quadro de áreas;
+  // profundidades estimadas a partir da área e da frente de 5,28 m
+  for (const c of D.casas) {
+    els.push(elem({
+      classe: 'unidade', categoria: 'casa', forma: 'casa', nome: `Casa ${pad(c.n, 3)}`, codigo: pad(c.n, 3), paiId: ranks.get(c.rank).id,
+      x: c.x, z: c.z, rot: c.rot, w: D.frente - 0.15, d: c.terrea ? 8.4 : 7.0, h: c.terrea ? 3.0 : 5.6,
+      peso: c.terrea ? 44.28 : 55.5, tipologia: c.terrea ? 'Térrea 2 dorm. (44,28 m²)' : 'Sobrado 2/3 dorm. (≈55,5 m²)', ordem: c.n,
+    }));
+  }
+  D.anexos.forEach((a, i) => {
+    const e = novoElemento(o, { classe: 'anexo', categoria: 'area_comum', forma: a.forma, nome: a.nome, codigo: `AC-${pad(i + 1, 2)}`, paiId: trechos.get(a.trecho).id, x: a.x, z: a.z, w: a.w, d: a.d, h: a.h, ordem: 100 + i, peso: a.area || 1 });
+    if (a.area) e.tipologia = `${String(a.area).replace('.', ',')} m² (quadro de áreas)`;
+    els.push(e);
+  });
+  D.infra.forEach((v, i) => {
+    els.push(novoElementoInfra(o, { nome: v.nome, codigo: `INF-${pad(i + 1, 2)}`, paiId: trechos.get(v.trecho).id, x: v.x, z: v.z, w: v.w, d: v.d, ordem: 200 + i }, v.w, v.d));
+  });
+  o.elementos.push(...els);
   o.config.casasPorRank = 3;
-  o.config.observacao = 'Fases provisórias: F1 = R01–R22, F2 = R23–R44, F3 = R45–R66. Ajuste pela aba Estrutura conforme o Plano de Ataque R02.';
+  o.config.layoutR02 = true;
+  o.config.observacao = 'Estrutura do Plano de Ataque R02: fases, trechos, ranks e numeração conferem com a legenda (84 + 54 + 60 = 198). Posições na escala do desenho; dimensões das casas estimadas pela área.';
   o.documentos = VILLA_FLORA_DOCS.map((nome) => ({ id: uid('doc'), nome, mime: 'application/pdf', tamanho: 0, arquivoId: null, papel: 'referencia', pendente: true, em: new Date().toISOString(), base: null }));
   o.esquematico = true;
   return o;

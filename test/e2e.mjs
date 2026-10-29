@@ -83,9 +83,10 @@ const est = await A(() => ({
 }));
 ok(est.nome === 'Villa Flora II', 'obra inicial é o Villa Flora II');
 ok(est.ranks === 66 && est.casas === 198, `66 ranks e 198 casas (${est.ranks}/${est.casas})`);
+ok(await A(() => __app.obra.config.layoutR02 && __app.obra.documentos.some((d) => d.base && d.base.ativo && d.arquivoId)), 'estrutura do Plano de Ataque R02 com a planta como base do 3D');
 ok(est.docs.includes('1002.ARQ.EX.0001.IMP-R01.pdf') && est.docs.includes('Villa Flora II - Desenho Plano de Ataque_R02.pdf'), 'documentos de referência listados');
 ok(est.lanc === 0, 'obra começa com avanços zerados');
-ok(['Guarita', 'Piscina adulto', 'Salão de festas'].every((x) => est.anexos.includes(x)), 'guarita, piscina e salão como elementos construídos');
+ok(['Guarita', 'Piscinas', 'Salão de festas'].every((x) => est.anexos.includes(x)), 'guarita, piscina e salão como elementos construídos');
 await foto('01-abertura');
 
 // ------------------------------------------------------------------
@@ -146,13 +147,13 @@ ok(/3 elementos e 3 etapas/.test(previa), `prévia mostra os afetados (${previa.
 await foto('03-previa-coletivo');
 await p.click('[data-acao=colAplicar]');
 await p.waitForTimeout(200);
-const cob = await Promise.all(['Casa 004', 'Casa 005', 'Casa 006'].map((c) => pctDe(c, 'Cobertura', '2026-02')));
-ok(cob.every((v) => v === 50), `Casa 004–006 com cobertura 50% (${cob})`);
+const cob = await Promise.all(['Casa 142', 'Casa 143', 'Casa 144'].map((c) => pctDe(c, 'Cobertura', '2026-02')));
+ok(cob.every((v) => v === 50), `Casas 142–144 com cobertura 50% (${cob})`);
 ok(await pctDe('Casa 001', 'Cobertura', '2026-02') === 0 && (await pctDe('Casa 001', 'Alvenaria', '2026-02')) === 45, 'outras casas e etapas preservadas');
-await selecionarPorBusca('Casa 005');
+await selecionarPorBusca('Casa 143');
 await definirAcum('Cobertura', 80);
-const cob2 = await Promise.all(['Casa 004', 'Casa 005', 'Casa 006'].map((c) => pctDe(c, 'Cobertura', '2026-02')));
-ok(cob2[0] === 50 && cob2[1] === 80 && cob2[2] === 50, `editar só a Casa 005 preserva as demais (${cob2})`);
+const cob2 = await Promise.all(['Casa 142', 'Casa 143', 'Casa 144'].map((c) => pctDe(c, 'Cobertura', '2026-02')));
+ok(cob2[0] === 50 && cob2[1] === 80 && cob2[2] === 50, `editar só a Casa 143 preserva as demais (${cob2})`);
 const dupla = await A(() => {
   const { idx, mes } = __app;
   const rank = __app.obra.elementos.find((e) => e.nome === 'Rank 02');
@@ -179,12 +180,12 @@ const fin6 = await A(() => __app.obra.elementos.filter((e) => e.categoria === 'c
   const ev = (__app.obra.conclusoes[e.id] || []).filter((x) => x.comp <= '2026-06');
   return ev.length && ev[ev.length - 1].acao !== 'reabrir';
 }).map((e) => e.nome));
-ok(fin6.length === 2 && fin6.includes('Casa 004'), `finalização permanece em jun (${fin6})`);
-await selecionarPorBusca('Casa 006');
+ok(fin6.length === 2 && fin6.includes('Casa 142'), `finalização permanece em jun (${fin6})`);
+await selecionarPorBusca('Casa 144');
 await p.click('[data-acao=finalizar]');
 await p.click('.dlg .primario');
 await p.waitForTimeout(200);
-ok((await p.textContent('#editor .situacao')).includes('Finalizado'), 'finalização individual da Casa 006 em jun');
+ok((await p.textContent('#editor .situacao')).includes('Finalizado'), 'finalização individual da Casa 144 em jun');
 await irMes('2026-05');
 await selecionarPorBusca('Rank 02');
 ok(/2 de 3/.test(await p.textContent('#editor .cont-fin')), 'em mai ainda são 2 de 3 (finalização de jun não retroage)');
@@ -193,7 +194,7 @@ await foto('04-finalizacao');
 // ------------------------------------------------------------------
 passo('Áreas comuns e infraestrutura');
 await irMes('2026-04');
-await selecionarPorBusca('Piscina adulto');
+await selecionarPorBusca('Piscinas');
 const etapasPiscina = await p.locator('#editor tr[data-et] td.et b').allTextContents();
 ok(!etapasPiscina.includes('Cobertura') && etapasPiscina.includes('Impermeabilização'), 'piscina com etapas próprias');
 await definirAcum('Estrutura', 100);
@@ -203,13 +204,13 @@ ok(ind.ac !== '0,0%', `indicador de áreas comuns separado (${ind.ac}; unidades 
 await p.click('[data-acao=finalizar]');
 await p.click('.dlg .primario');
 await p.waitForTimeout(150);
-ok((await p.textContent('.card.ac')).includes('1 de 12'), 'piscina finalizada contada nas áreas comuns');
-await selecionarPorBusca('Rua A');
+ok((await p.textContent('.card.ac')).includes('1 de 14'), 'piscina finalizada contada nas áreas comuns');
+await selecionarPorBusca('Estacionamento e circulação central');
 const unid = await linha('Pavimentação').locator('td').nth(1).textContent();
 ok(/m²/.test(unid), `pavimentação por quantidade (${unid.trim()})`);
-const totPav = await A(() => { const e = __app.obra.elementos.find((x) => x.nome === 'Rua A'); const et = __app.obra.etapas.find((x) => x.nome === 'Pavimentação'); return e.quantidades[et.id]; });
+const totPav = await A(() => { const e = __app.obra.elementos.find((x) => x.nome === 'Estacionamento e circulação central'); const et = __app.obra.etapas.find((x) => x.nome === 'Pavimentação'); return e.quantidades[et.id]; });
 await definirReal('Pavimentação', Math.round(totPav / 4));
-const pPav = await pctDe('Rua A', 'Pavimentação', '2026-04');
+const pPav = await pctDe('Estacionamento e circulação central', 'Pavimentação', '2026-04');
 ok(Math.abs(pPav - 25) < 0.1, `realizado em m² vira % pelo total (${pPav}%)`);
 ok((await p.textContent('.card.inf .card-num')) !== '0,0%', 'indicador de infraestrutura separado');
 
@@ -225,7 +226,7 @@ for (const [m, txt] of [['avanco', 'Por avanço'], ['mudou', 'O que mudou'], ['e
 await p.selectOption('#selEtapa', { label: 'Cobertura' });
 await p.waitForTimeout(150);
 ok(await A(() => __app.modo === 'etapa' && __app.obra.etapas.find((e) => e.id === __app.etapaFiltro).nome === 'Cobertura'), 'filtro por etapa ativo');
-await selecionarPorBusca('Casa 005');
+await selecionarPorBusca('Casa 143');
 const ets = await p.locator('#editor tr[data-et] td.et b').allTextContents();
 ok(ets.length === 1 && ets[0] === 'Cobertura', 'painel edita só a etapa filtrada');
 await p.selectOption('#selEtapa', 'todas');
@@ -369,7 +370,7 @@ await p.locator('tr', { hasText: 'Villa Flora II' }).first().locator('[data-o=du
 await p.fill('#dNome', 'VF cópia estrutura');
 await p.click('.dlg .primario');
 await p.waitForFunction(() => __app.obra.nome === 'VF cópia estrutura');
-ok((await nLanc()) === 0 && (await A(() => __app.obra.elementos.length)) === 286, 'cópia sem avanços mantém estrutura e zera lançamentos');
+ok((await nLanc()) === 0 && (await A(() => __app.obra.elementos.length)) === 304, 'cópia sem avanços mantém estrutura e zera lançamentos');
 await p.selectOption('#selObra', vfId);
 await p.waitForFunction((id) => __app.obra.id === id, vfId);
 await p.click('#btnObras');
@@ -414,7 +415,7 @@ await p.fill('#lConf', 'LIMPAR');
 const [bk] = await Promise.all([p.waitForEvent('download'), p.click('.dlg-rodape .perigo')]);
 ok(!!bk, 'cópia de segurança baixada antes da limpeza');
 await p.waitForTimeout(400);
-ok((await nLanc()) === 0 && (await A(() => __app.obra.elementos.length)) === 286, 'avanços limpos e estrutura mantida');
+ok((await nLanc()) === 0 && (await A(() => __app.obra.elementos.length)) === 304, 'avanços limpos e estrutura mantida');
 await p.selectOption('#selObra', vfId);
 await p.waitForFunction((id) => __app.obra.id === id, vfId);
 ok((await nLanc()) === snap.n, 'Villa Flora original não foi afetado pela limpeza');
@@ -433,7 +434,7 @@ await p.click('.dlg .primario');
 
 // ------------------------------------------------------------------
 passo('Estrutura configurável pela interface');
-await selecionarPorBusca('Fase 1');
+await selecionarPorBusca('Trecho 01');
 await p.click('[data-aba=props]');
 await p.click('[data-acao=addRank]');
 await p.waitForTimeout(200);
@@ -447,11 +448,11 @@ await p.waitForTimeout(150);
 ok(await A(() => __app.obra.elementos.some((e) => e.nome === 'Rank 67 (teste)')), 'renomear grupo');
 await selecionarPorBusca('Casa 001');
 await p.click('[data-aba=props]');
-const x0 = await A(() => __app.obra.elementos.find((e) => e.nome === 'Casa 001').x);
+const [x0, r0] = await A(() => { const e = __app.obra.elementos.find((x) => x.nome === 'Casa 001'); return [e.x, e.rot]; });
 await p.click('[data-nudge="x:1"]');
 await p.click('[data-nudge="rot:15"]');
 const e1 = await A(() => { const e = __app.obra.elementos.find((x) => x.nome === 'Casa 001'); return { x: e.x, rot: e.rot }; });
-ok(Math.abs(e1.x - x0 - 1) < 1e-6 && e1.rot === 15, 'ajuste de posição e orientação');
+ok(Math.abs(e1.x - x0 - 1) < 1e-6 && (e1.rot - r0 + 360) % 360 === 15, 'ajuste de posição e orientação');
 await p.click('#btnEtapas');
 await p.click('[data-mod=infra]');
 await p.click('.dlg-fundo:last-child .dlg-rodape button:first-child');

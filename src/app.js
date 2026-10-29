@@ -535,11 +535,10 @@ async function iniciar() {
 
   await recarregarIndice();
   if (!app.indice.length) {
-    const vf = M.criarVillaFlora();
-    vf.revisoes.push({ id: C.uid('r'), em: new Date().toISOString(), tipo: 'criacao' });
-    await S.salvarObra(vf);
+    await S.salvarObra(await novaVillaFlora());
     await recarregarIndice();
   }
+  const avisoMigracao = await migrarVillaFloraR02();
   const ultima = await S.meta('ultimaObra');
   const alvo = app.indice.find((o) => o.id === ultima && !o.arquivada) || app.indice.find((o) => !o.arquivada) || app.indice[0];
   await abrirObra(alvo.id);
@@ -550,6 +549,64 @@ async function iniciar() {
     $('#boasVindas').classList.remove('oculto');
   }
   $('#fecharBoas').onclick = () => $('#boasVindas').classList.add('oculto');
+  if (avisoMigracao) toast(avisoMigracao);
+}
+
+// Villa Flora II pelo Plano de Ataque R02, com a planta já posicionada como base do 3D.
+export async function novaVillaFlora() {
+  const vf = M.criarVillaFlora();
+  vf.revisoes.push({ id: C.uid('r'), em: new Date().toISOString(), tipo: 'criacao', origem: 'Plano de Ataque R02' });
+  try {
+    const { VF_PLANTA_JPEG, VF_PLANTA_BASE } = await import('./villaflora-planta.js');
+    const blob = await S.dataUrlParaBlob(VF_PLANTA_JPEG);
+    const id = C.uid('arq');
+    await S.salvarArquivo({ id, obraId: vf.id, nome: 'Plano de Ataque R02 (planta).jpg', mime: 'image/jpeg', blob });
+    vf.documentos.unshift({ id: C.uid('doc'), nome: 'Plano de Ataque R02 · planta para o 3D', mime: 'image/jpeg', tamanho: blob.size, arquivoId: id, papel: 'planta', em: new Date().toISOString(), base: { ...VF_PLANTA_BASE, ativo: true } });
+  } catch (e) {
+    console.warn('planta do Villa Flora não carregada', e);
+  }
+  return vf;
+}
+
+// Obras do Villa Flora II criadas com a distribuição provisória: sem lançamentos,
+// são refeitas no lugar; com lançamentos, ficam como estão e uma nova obra R02 é criada ao lado.
+async function migrarVillaFloraR02() {
+  if (await S.meta('migracaoR02')) return null;
+  let msg = null;
+  const candidatas = app.indice.filter((x) => /^Villa Flora II/.test(x.nome));
+  const legadas = [];
+  for (const ind of candidatas) {
+    const o = await S.carregarObra(ind.id);
+    if (o && !(o.config && o.config.layoutR02)) legadas.push(o);
+  }
+  let comDados = false;
+  for (const o of legadas) {
+    const vazia = !Object.keys(o.lancamentos || {}).length && !Object.keys(o.conclusoes || {}).length;
+    if (!vazia) { comDados = true; continue; }
+    const n = await novaVillaFlora();
+    n.id = o.id;
+    n.nome = o.nome;
+    n.inicio = o.inicio;
+    n.termino = o.termino;
+    n.arquivada = o.arquivada;
+    for (const d of o.documentos || []) {
+      if (!d.arquivoId) continue;
+      const pend = n.documentos.find((x) => !x.arquivoId && x.nome === d.nome);
+      if (pend) Object.assign(pend, { ...d, id: pend.id });
+      else n.documentos.push(d);
+    }
+    await S.salvarObra(n);
+    msg = 'Villa Flora II atualizado pelo Plano de Ataque R02: fases, trechos, ranks e numeração reais.';
+  }
+  if (comDados && !candidatas.some((x) => /R02/.test(x.nome))) {
+    const n = await novaVillaFlora();
+    n.nome = 'Villa Flora II (Plano de Ataque R02)';
+    await S.salvarObra(n);
+    msg = 'Criada a obra “Villa Flora II (Plano de Ataque R02)”. A versão anterior foi mantida com seus lançamentos.';
+  }
+  await S.meta('migracaoR02', true);
+  if (msg) await recarregarIndice();
+  return msg;
 }
 
 // ganchos para testes automatizados e diagnóstico no console

@@ -53,7 +53,7 @@ function htmlFolha(e) {
   const aba = ['avanco', 'historico', 'props'].includes(app.abaEditor) ? app.abaEditor : 'avanco';
   return `<div class="ed-topo">
       <div class="alvo"><span class="rot">Lançamento em</span><b class="nome-alvo">${esc(e.nome)}</b>
-        <span class="cam">${esc(caminho(e.id))}${e.categoria ? ` · ${esc(rotCategoria(e.categoria))}` : ''}</span>
+        <span class="cam">${esc(caminho(e.id))}${e.categoria ? ` · ${esc(rotCategoria(e.categoria))}` : ''}${e.tipologia ? ` · ${esc(e.tipologia)}` : ''}</span>
         <span class="comp">Competência <b>${fmtMes(mes)}</b></span></div>
       <div class="situacao">${chipStatus(s)}<span class="fis">Físico ${pct(fis)}</span>
         ${conc ? `<button data-acao="reabrir" class="sec">Reabrir</button>${conc === 'finalizado' ? '<button data-acao="entregar" class="sec">Marcar entregue</button>' : ''}`
@@ -162,7 +162,7 @@ function propsElem(e) {
       <div class="botoes-col">
         <button data-acao="addFilho" data-cls="unidade">+ Unidade (casa, apto, lote)</button>
         <button data-acao="addFilho" data-cls="grupo">+ Subgrupo (rank, pavimento, quadra)</button>
-        ${e.categoria === 'fase' || e.categoria === 'quadra' ? `<button data-acao="addRank">+ Rank com ${app.obra.config.casasPorRank || 3} casas</button>` : ''}
+        ${['fase', 'quadra', 'trecho'].includes(e.categoria) ? `<button data-acao="addRank">+ Rank com ${app.obra.config.casasPorRank || 3} casas</button>` : ''}
         <button data-acao="addFilho" data-cls="anexo">+ Área comum / anexo</button>
         <button data-acao="addFilho" data-cls="infra">+ Trecho de infraestrutura</button>
         <button data-acao="serie">Gerar série de elementos…</button>

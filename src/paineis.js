@@ -8,7 +8,7 @@ import { app, selecionar, irParaMes, renderTudo } from './app.js';
 
 const ROT_CAT = {
   fase: 'Fase', quadra: 'Quadra', rank: 'Rank', casa: 'Casa', torre: 'Torre', pavimento: 'Pavimento', apartamento: 'Apartamento',
-  area_comum: 'Área comum', areas_comuns: 'Áreas comuns', setor: 'Setor', lote: 'Lote', bloco: 'Bloco', frente: 'Frente', via: 'Via', infraestrutura: 'Infraestrutura',
+  area_comum: 'Área comum', areas_comuns: 'Áreas comuns', trecho: 'Trecho', setor: 'Setor', lote: 'Lote', bloco: 'Bloco', frente: 'Frente', via: 'Via', infraestrutura: 'Infraestrutura',
 };
 export const rotCategoria = (c) => ROT_CAT[c] || (c ? c.charAt(0).toUpperCase() + c.slice(1).replace(/_/g, ' ') : '');
 

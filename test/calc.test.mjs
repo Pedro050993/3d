@@ -195,15 +195,27 @@ test('limpeza zera avanços e mantém estrutura; não afeta outra obra', () => {
   assert.equal(C.pctEtapa(ib, cb, etapa(b, 'Alvenaria'), '2026-02'), 70);
 });
 
-test('Villa Flora II: 66 ranks x 3 casas = 198, numeração sequencial', () => {
+test('Villa Flora II pelo Plano de Ataque R02: fases, trechos, ranks e numeração', () => {
   const o = M.criarVillaFlora();
   const idx = C.indexar(o);
   const ranks = o.elementos.filter((e) => e.categoria === 'rank');
   assert.equal(ranks.length, 66);
   const cs = o.elementos.filter((e) => e.categoria === 'casa');
   assert.equal(cs.length, 198);
-  for (const r of ranks) assert.equal(C.folhas(idx, r.id).length, 3);
-  assert.deepEqual(cs.map((c) => Number(c.codigo)), Array.from({ length: 198 }, (_, i) => i + 1));
+  assert.deepEqual(cs.map((c) => Number(c.codigo)).sort((a, b) => a - b), Array.from({ length: 198 }, (_, i) => i + 1));
+  for (const r of ranks) {
+    const f = C.folhas(idx, r.id).map((c) => Number(c.codigo)).sort((a, b) => a - b);
+    assert.equal(f.length, 3);
+    assert.equal(f[2] - f[0], 2, `${r.nome} com casas consecutivas`);
+  }
+  const porFase = Object.fromEntries(o.elementos.filter((e) => e.categoria === 'fase').map((f) => [f.nome, C.folhas(idx, f.id).filter((x) => x.categoria === 'casa').length]));
+  assert.deepEqual(porFase, { 'Fase I': 84, 'Fase II': 54, 'Fase III': 60 });
+  const r01 = ranks.find((r) => r.nome === 'Rank 01');
+  assert.deepEqual(C.folhas(idx, r01.id).map((c) => c.codigo).sort(), ['145', '146', '147']);
+  assert.equal(o.elementos.filter((e) => e.categoria === 'trecho').length, 18);
+  // uma térrea por rank (casa do meio) e 132 sobrados, como no quadro de áreas
+  assert.equal(cs.filter((c) => c.peso === 44.28).length, 66);
+  assert.ok(['Guarita', 'Piscinas', 'Salão de festas', "Reservatório d'água"].every((n) => o.elementos.some((e) => e.nome === n && e.classe === 'anexo')));
   assert.equal(o.documentos.length, 2);
   assert.equal(Object.keys(o.lancamentos).length, 0, 'obra nova começa zerada');
 });
