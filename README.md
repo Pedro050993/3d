@@ -111,3 +111,10 @@ src/paineis.js  lista de elementos e indicadores
 src/modais.js   obras, etapas, documentos, dados e ajuda
 src/xlsx.js     gerador de planilha .xlsx
 ```
+
+## Versão publicada (Vercel)
+
+https://obras3d-tau.vercel.app publica sozinha a cada envio para o GitHub.
+
+- Hoje está **sem login**: cada aparelho guarda os próprios dados no navegador (exporte e importe para levar de um aparelho a outro).
+- Para ligar o login e os dados compartilhados (Supabase, já criado com as regras de acesso em `supabase/001_obras3d.sql`), renomeie `config.web.json.desligado` para `config.web.json` e envie. No painel do Supabase, desligue "Confirm email" e coloque o endereço do app em "Site URL".
