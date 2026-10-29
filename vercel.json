@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci",
+  "buildCommand": "node build.mjs && mkdir -p public && if [ -f dist/web/index.html ]; then cp dist/web/index.html public/index.html; else cp dist/index.html public/index.html; fi",
+  "outputDirectory": "public",
+  "framework": null,
+  "headers": [
+    { "source": "/(.*)", "headers": [
+      { "key": "Cache-Control", "value": "no-cache" },
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+    ] }
+  ]
+}
