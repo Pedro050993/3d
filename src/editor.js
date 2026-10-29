@@ -30,9 +30,11 @@ export function renderEditor() {
   const a = alvoAtual();
   if (!a) {
     el.innerHTML = `<div class="ed-vazio">
-      <b>Selecione o que vai receber o lançamento.</b>
-      <span>Clique numa casa, apartamento, área comum ou trecho na cena ou na lista à esquerda. Dê dois cliques (ou use “Nível de seleção”) para pegar o rank, pavimento ou grupo inteiro. Shift + clique monta um conjunto.</span>
-      <span>Competência ativa: <b>${fmtMes(app.mes)}</b>. Os valores gravam sozinhos ao sair do campo.</span></div>`;
+      <div class="passos">
+        <div class="passo feito"><span class="num">1</span><div><b>Mês do lançamento</b><span>${fmtMes(app.mes)} · troque nas setas ‹ › logo acima</span></div></div>
+        <div class="passo atual"><span class="num">2</span><div><b>Escolha o que foi feito</b><span>Toque numa casa na maquete ou na lista. Dois toques pegam o rank inteiro.</span></div></div>
+        <div class="passo"><span class="num">3</span><div><b>Informe quanto andou</b><span>Use +5, +10 ou 100% em cada etapa, ou digite. Grava sozinho.</span></div></div>
+      </div></div>`;
     return;
   }
   if (a.tipo === 'folha') el.innerHTML = htmlFolha(a.elem);
@@ -74,9 +76,9 @@ function htmlFolha(e) {
       </div>
     </div>
     <div class="abas" role="tablist">
-      <button class="${aba === 'avanco' ? 'ativa' : ''}" data-aba="avanco">Avanço por etapa</button>
+      <button class="${aba === 'avanco' ? 'ativa' : ''}" data-aba="avanco">Lançar avanço</button>
       <button class="${aba === 'historico' ? 'ativa' : ''}" data-aba="historico">Histórico</button>
-      <button class="${aba === 'props' ? 'ativa' : ''}" data-aba="props">Posição e propriedades</button>
+      <button class="${aba === 'props' ? 'ativa' : ''}" data-aba="props">Posição e cadastro</button>
     </div>
     <div class="ed-corpo">${aba === 'avanco' ? tabelaFolha(e) : aba === 'historico' ? historicoFolha(e) : propsElem(e)}</div>`;
 }
@@ -102,15 +104,15 @@ function tabelaFolha(e) {
       <td class="n"><span class="mais">+</span><input class="in-real" inputmode="decimal" value="${num(qtd ? real : (real / tot) * 100, qtd ? 2 : 1)}" aria-label="Realizado no mês ${esc(et.nome)}"><small>${qtd ? esc(et.unidade) : 'p.p.'}</small></td>
       <td class="barra-cel"><input type="range" class="barra" min="0" max="100" step="0.5" value="${pAt}" style="--ant:${pAnt}%;--atu:${pAt}%" aria-label="Acumulado atual ${esc(et.nome)}"></td>
       <td class="n"><span class="igual">=</span><input class="in-acum" inputmode="decimal" value="${num(pAt, 1)}" aria-label="Acumulado atual % ${esc(et.nome)}"><small>%</small>${qtd ? `<small class="q">${num(aAt, 1)} ${esc(et.unidade)}</small>` : ''}</td>
-      <td class="marca">${temLanc ? '<span title="Há lançamento neste mês" class="pt">●</span>' : ''}</td>
+      <td class="rapidos">${temLanc ? '<span title="Já tem lançamento neste mês" class="pt">●</span>' : ''}<button data-rap="5" title="Somar 5 pontos no mês">+5</button><button data-rap="10" title="Somar 10 pontos no mês">+10</button><button data-rap="100" class="${pAt >= 99.99 ? 'feito' : ''}" title="Etapa concluída">100%</button></td>
     </tr>`;
   }).join('');
   return `<div class="tab-wrap"><table class="tab-lanc">
-    <thead><tr><th>Etapa</th><th>Total</th><th>Acumulado anterior<small>${fmtMes(ant)}</small></th><th>Realizado no mês<small>${fmtMes(mes)}</small></th><th>Barra (arraste)</th><th>Acumulado atual</th><th></th></tr></thead>
+    <thead><tr><th>Etapa</th><th>Quantidade</th><th>Até ${fmtMes(ant)}</th><th>Feito em ${fmtMes(mes)}</th><th>Arraste a barra</th><th>Total agora</th><th>Rápido</th></tr></thead>
     <tbody>${linhas}</tbody></table></div>
-    <div class="ed-acoes"><span class="formula">Acumulado anterior + realizado no mês = acumulado atual · físico do elemento ${pct(C.progElem(app.idx, e, mes))}</span>
+    <div class="ed-acoes"><span class="formula">Até o mês anterior + feito no mês = total agora · avanço da ${esc(rotCategoria(e.categoria).toLowerCase() || 'unidade')}: <b>${pct(C.progElem(app.idx, e, mes))}</b></span>
       ${app.modo === 'etapa' && app.etapaFiltro !== 'todas' ? '<span class="aviso">Filtro de etapa ativo</span>' : ''}
-      <button class="sec" data-acao="tudo100">Todas as etapas a 100%</button>
+      <button class="sec" data-acao="tudo100">✓ Tudo 100%</button>
       <button class="sec" data-acao="zerarMes">Limpar lançamentos deste mês</button></div>`;
 }
 
@@ -216,10 +218,10 @@ function htmlGrupo(a) {
         ${app.selecao.length > 1 ? '<button data-acao="limparSel" class="sec">Limpar seleção</button>' : ''}</div>
     </div>
     <div class="abas" role="tablist">
-      <button class="${aba === 'coletivo' ? 'ativa' : ''}" data-aba="coletivo">Lançamento coletivo</button>
+      <button class="${aba === 'coletivo' ? 'ativa' : ''}" data-aba="coletivo">Lançar no grupo todo</button>
       <button class="${aba === 'final' ? 'ativa' : ''}" data-aba="final">Finalização (${nf}/${n})</button>
-      <button class="${aba === 'elems' ? 'ativa' : ''}" data-aba="elems">Elementos (${n})</button>
-      ${a.grupo ? `<button class="${aba === 'props' ? 'ativa' : ''}" data-aba="props">Estrutura e propriedades</button>` : ''}
+      <button class="${aba === 'elems' ? 'ativa' : ''}" data-aba="elems">Ver cada um (${n})</button>
+      ${a.grupo ? `<button class="${aba === 'props' ? 'ativa' : ''}" data-aba="props">Estrutura e cadastro</button>` : ''}
     </div>
     <div class="ed-corpo">${aba === 'coletivo' ? coletivo(a) : aba === 'final' ? finalizacao(a) : aba === 'elems' ? matriz(a) : propsElem(a.grupo)}</div>`;
 }
@@ -431,6 +433,13 @@ export function ligarEditor() {
     if (b.dataset.ir) {
       const { irParaMes } = await import('./app.js');
       return irParaMes(b.dataset.ir);
+    }
+    if (b.dataset.rap) {
+      const tr = b.closest('tr[data-et]');
+      const atual = lerNum(tr.querySelector('.in-acum').value) || 0;
+      const r = Number(b.dataset.rap);
+      tr.querySelector('.in-acum').value = num(r === 100 ? 100 : Math.min(100, atual + r), 1);
+      return salvarLinha(tr, 'acum');
     }
     if (b.dataset.nudge) {
       const [k, d] = b.dataset.nudge.split(':');

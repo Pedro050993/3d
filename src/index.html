@@ -22,9 +22,17 @@
     <button id="btnObras" title="Criar, duplicar, arquivar e abrir obras">Obras</button>
     <button id="btnEtapas" title="Etapas, unidades e pesos">Etapas</button>
     <button id="btnDocs" title="Plantas e documentos">Documentos</button>
-    <button id="btnDados" title="Exportar, importar, planilha e limpeza">Dados</button>
-    <button id="btnAjuda" title="Instruções">Ajuda</button>
+    <button id="btnDados" title="Exportar, importar, planilha e limpeza">Exportar</button>
+    <button id="btnAjuda" title="Como usar">Ajuda</button>
   </nav>
+  <div class="topo-paineis"><span class="rot-topo">Mostrar</span>
+    <div class="seg grupo-bt paineis" role="group" aria-label="Painéis">
+      <button data-alternar="esq" title="Mostrar ou esconder a lista de casas, ranks e áreas">◧ Lista</button>
+      <button data-alternar="dir" title="Mostrar ou esconder os indicadores">◨ Indicadores</button>
+      <button data-alternar="editor" title="Mostrar ou esconder o painel de lançamento">⬓ Lançamento</button>
+      <button data-alternar="foco" title="Só a maquete na tela (tecla F)">⛶ Foco</button>
+    </div>
+  </div>
   <span id="usuario" class="usuario oculto"></span>
   <span id="statusSalvo" class="salvo">…</span>
   <div class="moveis">
@@ -54,32 +62,35 @@
 
   <section class="centro">
     <div class="barra3d">
-      <div class="grupo-bt modos" role="group" aria-label="Modo de visualização">
-        <button data-modo="maquete">Maquete</button>
-        <button data-modo="avanco">Por avanço</button>
-        <button data-modo="mudou">O que mudou</button>
-        <span id="wrapEtapa" class="wrap-etapa"><button data-modo="etapa">Etapa</button><select id="selEtapa" title="Etapa"></select></span>
+      <div class="bloco-barra">
+        <span class="rot-barra">Ver</span>
+        <div class="seg" role="group" aria-label="Como ver a obra">
+          <button data-modo="maquete" title="A obra como está construída no mês">Maquete</button>
+          <button data-modo="avanco" title="Cores por situação: não iniciado, em execução, concluído, finalizado">Cores do avanço</button>
+          <button data-modo="mudou" title="O que avançou entre dois meses">O que mudou</button>
+          <span id="wrapEtapa" class="wrap-etapa"><button data-modo="etapa" title="Ver e lançar uma etapa só">Uma etapa</button><select id="selEtapa" title="Escolha a etapa"></select></span>
+        </div>
       </div>
-      <div class="grupo-bt vistas" role="group" aria-label="Vistas">
-        <button id="btnGeral" title="Visão geral">⌂ Geral</button>
-        <button id="btnTopo" title="Vista superior">⊤ Superior</button>
-        <button id="btnPersonagem" title="Clique no ponto da obra para colocar o personagem e começar a caminhar">🧍 Personagem</button>
-        <button id="btnFp" title="Caminhar em primeira pessoa">👁 1ª pessoa</button>
-        <button id="btnLado" title="Duas competências lado a lado">◫ Lado a lado</button>
-        <label id="wrapSync" class="chk-lin"><input type="checkbox" id="chkSync" checked> sincronizar</label>
+      <div class="bloco-barra">
+        <span class="rot-barra">Câmera</span>
+        <div class="seg" role="group" aria-label="Câmera">
+          <button id="btnGeral" title="Ver a obra inteira">⌂ Geral</button>
+          <button id="btnTopo" title="Ver de cima, como na planta">⊤ De cima</button>
+          <button id="btnFp" title="Andar pela obra como se estivesse lá">🚶 Caminhar</button>
+          <button id="btnPersonagem" title="Escolher na maquete o ponto onde a caminhada começa">📍 Partida</button>
+        </div>
       </div>
-      <div class="grupo-bt paineis" role="group" aria-label="Painéis">
-        <button data-alternar="esq" title="Abrir ou fechar a lista de elementos">◧ Lista</button>
-        <button data-alternar="dir" title="Abrir ou fechar os indicadores">◨ Indicadores</button>
-        <button data-alternar="editor" title="Abrir ou fechar o painel de lançamento">⬓ Lançamento</button>
-        <button data-alternar="foco" title="Esconder todos os painéis e deixar só a maquete (tecla F)">⛶ Foco</button>
-      </div>
-      <div class="grupo-bt opcoes">
-        <label class="chk-lin" title="Ao clicar na cena, selecionar a unidade ou o grupo">Seleção
-          <select id="selNivel"><option value="folha">Unidade</option><option value="pai">Grupo (rank, pav.)</option><option value="avo">Grupo acima (fase, torre)</option></select></label>
-        <label class="chk-lin">Rótulos <select id="selRotulos"><option value="nenhum">Nenhum</option><option value="grupos">Grupos</option><option value="todos">Todos</option></select></label>
-        <label class="chk-lin"><input type="checkbox" id="chkSombras"> sombras</label>
-        <button id="btnMover" title="Arrastar elemento selecionado na cena">✥ Mover</button>
+      <div class="bloco-barra fim">
+        <details class="mais">
+          <summary title="Mais opções de visualização">⚙</summary>
+          <div class="pop">
+            <label class="campo"><span>Ao clicar na maquete, selecionar</span>
+              <select id="selNivel"><option value="folha">a casa / unidade</option><option value="pai">o rank ou pavimento</option><option value="avo">o grupo acima (trecho, torre)</option></select></label>
+            <label class="campo"><span>Nomes na maquete</span><select id="selRotulos"><option value="nenhum">Nenhum</option><option value="grupos">Só ranks e grupos</option><option value="todos">Todos</option></select></label>
+            <label class="chk-lin"><input type="checkbox" id="chkSombras"> Sombras (mais bonito, mais pesado)</label>
+            <button id="btnMover" title="Arrastar o elemento selecionado na maquete">✥ Mover elemento na maquete</button>
+          </div>
+        </details>
       </div>
     </div>
     <div id="cenas" class="cenas">
@@ -104,20 +115,26 @@
     </div>
 
     <div class="linha-tempo">
-      <div class="lt-ctrl">
-        <button id="btnAnt" title="Mês anterior">◀</button>
-        <button id="btnPlay" title="Reproduzir">▶</button>
-        <button id="btnProx" title="Próximo mês">▶▶</button>
-        <span id="rotMes" class="rot-mes"></span>
-        <button id="btnHoje" class="sec" title="Ir para o mês atual">hoje</button>
+      <div class="lt-mes">
+        <span class="rot-barra">Mês do lançamento</span>
+        <div class="lt-ctrl">
+          <button id="btnAnt" class="seta" title="Mês anterior" aria-label="Mês anterior">‹</button>
+          <span id="rotMes" class="rot-mes"></span>
+          <button id="btnProx" class="seta" title="Próximo mês" aria-label="Próximo mês">›</button>
+          <button id="btnHoje" class="sec" title="Ir para o mês atual">Hoje</button>
+        </div>
       </div>
       <div class="lt-trilho">
-        <input id="rangeMes" type="range" min="0" max="0" step="1" aria-label="Competência">
+        <input id="rangeMes" type="range" min="0" max="0" step="1" aria-label="Mês do lançamento">
         <div id="marcasMes" class="marcas"></div>
         <span id="periodo" class="periodo"></span>
       </div>
-      <label class="lt-comp">Comparar com <select id="selComp"></select></label>
-      <button id="btnRecolherEditor" class="icone" title="Recolher/expandir painel de lançamento">▾</button>
+      <button id="btnPlay" class="sec" title="Ver a obra evoluindo mês a mês">▶ Evolução</button>
+      <div class="lt-comp">
+        <label id="rotComp">Comparar com <select id="selComp"></select></label>
+        <button id="btnLado" title="Ver o mês escolhido e o de comparação lado a lado">◫ Lado a lado</button>
+        <label id="wrapSync" class="chk-lin"><input type="checkbox" id="chkSync" checked> mover juntas</label>
+      </div>
     </div>
 
     <div id="editor" class="editor"></div>

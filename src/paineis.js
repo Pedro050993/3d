@@ -101,8 +101,8 @@ export function renderIndicadores() {
   const card = (titulo, b, nomeUn, classe) => b.n ? `<div class="card ${classe}">
       <div class="card-tit">${titulo}</div>
       <div class="card-num">${pct(b.acum)}</div>
-      <div class="card-lin"><span>Acumulado anterior</span><b>${pct(b.acumAnt)}</b></div>
-      <div class="card-lin"><span>Realizado no mês</span><b>${pp(b.mes)}</b></div>
+      <div class="card-lin"><span>Até o mês anterior</span><b>${pct(b.acumAnt)}</b></div>
+      <div class="card-lin"><span>Feito no mês</span><b>${pp(b.mes)}</b></div>
       <div class="card-lin"><span>Finalizados</span><b>${b.finalizados} de ${b.n} ${nomeUn}</b></div>
     </div>` : '';
   const nomeUn = obra.tipo === 'edificio' ? 'aptos' : obra.tipo === 'loteamento' ? 'lotes' : obra.tipo === 'condominio' ? 'casas' : 'unid.';
@@ -126,7 +126,7 @@ export function renderIndicadores() {
     return `<tr data-sel="${g.id}"><td>${esc(g.nome)}</td><td class="n">${pct(a)}</td><td class="n">${pp(a - b)}</td><td class="n">${nf}/${fl.length}</td></tr>`;
   }).join('');
   el.innerHTML = `
-    <div class="ind-topo"><span>Competência</span><b>${fmtMes(mes)}</b></div>
+    <div class="ind-topo"><span>Mês</span><b>${fmtMes(mes)}</b></div>
     ${card(obra.tipo === 'edificio' ? 'Apartamentos' : obra.tipo === 'loteamento' ? 'Lotes' : 'Unidades', r.unidade, nomeUn, 'un')}
     ${card('Áreas comuns e anexos', r.anexo, 'áreas', 'ac')}
     ${card('Infraestrutura', r.infra, 'trechos', 'inf')}

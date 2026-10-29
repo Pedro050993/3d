@@ -383,3 +383,77 @@ input.barra::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; b
 body.papel-campo #btnEtapas, body.papel-leitura #btnEtapas,
 body.papel-campo #btnEditarObra, body.papel-leitura #btnEditarObra,
 body.papel-campo #btnMover, body.papel-leitura #btnMover { display: none; }
+
+/* ---------------------------------------------------------------- reorganização (barra em grupos, mês em destaque, passos) */
+.barra3d { gap: 8px 18px; padding: 6px 12px; align-items: flex-end; }
+.bloco-barra { display: flex; flex-direction: column; gap: 2px; }
+.bloco-barra.fim { margin-left: auto; flex-direction: row; align-items: center; gap: 8px; }
+.bloco-barra:not(.fim) { flex-direction: column; }
+.bloco-barra > #btnLado { align-self: flex-start; }
+.rot-barra { font-size: 10px; text-transform: uppercase; letter-spacing: .7px; color: var(--tinta2); font-weight: 600; }
+.seg { display: inline-flex; flex-wrap: wrap; }
+.seg > button, .seg > .wrap-etapa > button, .seg > .wrap-etapa > select { border-radius: 0; margin-left: -1px; }
+.seg > :first-child, .seg > :first-child > button { border-top-left-radius: 7px; border-bottom-left-radius: 7px; margin-left: 0; }
+.seg > :last-child, .seg > .wrap-etapa:last-child > select { border-top-right-radius: 7px; border-bottom-right-radius: 7px; }
+.seg > button.ativo, .seg .wrap-etapa > button.ativo { position: relative; z-index: 1; }
+#wrapSync { font-size: 11px; color: var(--tinta2); }
+details.mais { position: relative; }
+details.mais > summary { list-style: none; cursor: pointer; border: 1px solid var(--linha); border-radius: 7px; padding: 4px 10px; background: var(--papel); min-height: 28px; display: flex; align-items: center; user-select: none; }
+details.mais > summary::-webkit-details-marker { display: none; }
+details.mais[open] > summary { background: var(--verde); color: #fff; border-color: var(--verde); }
+details.mais .pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; width: 280px; background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.18); display: flex; flex-direction: column; gap: 8px; }
+details.mais .pop select { width: 100%; }
+details.mais .pop button { text-align: left; }
+
+.linha-tempo { gap: 10px 16px; padding: 8px 12px; align-items: center; }
+.lt-mes { display: flex; flex-direction: column; gap: 1px; }
+.lt-ctrl { gap: 6px; }
+.lt-ctrl .seta { font-size: 22px; line-height: 1; width: 38px; height: 34px; padding: 0; border-radius: 8px; }
+.rot-mes { font-size: 20px; min-width: 104px; color: var(--verde); }
+.rot-mes b { font-weight: 700; }
+#btnPlay { white-space: nowrap; }
+
+.ed-vazio { padding: 6px 0; }
+.passos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.passo { display: flex; gap: 10px; align-items: flex-start; background: var(--papel2); border-radius: 10px; padding: 10px 12px; border: 1px solid transparent; }
+.passo .num { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: #d8d4c6; color: var(--tinta); }
+.passo div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.passo b { font-size: 14px; color: var(--tinta); }
+.passo span { color: var(--tinta2); font-size: 12px; }
+.passo.feito .num { background: var(--verde); color: #fff; }
+.passo.atual { border-color: var(--alerta); background: #fff8e4; }
+.passo.atual .num { background: var(--alerta); }
+
+.tab-lanc td.rapidos { white-space: nowrap; }
+.tab-lanc td.rapidos button { min-height: 28px; padding: 2px 8px; margin-left: 3px; font-variant-numeric: tabular-nums; }
+.tab-lanc td.rapidos button[data-rap="100"] { border-color: #9fd0b2; color: #1f6b3e; }
+.tab-lanc td.rapidos button[data-rap="100"].feito { background: #1f9d55; border-color: #1f9d55; color: #fff; }
+.tab-lanc td.rapidos .pt { margin-right: 4px; }
+.tab-lanc tbody tr:hover td { background: #faf7ec; }
+.nome-alvo { font-size: 18px; }
+
+@media (max-width: 820px) {
+  .barra3d { align-items: flex-end; }
+  .bloco-barra.fim { margin-left: 0; }
+  .rot-barra { display: none; }
+  .passos { grid-template-columns: 1fr; }
+  .tab-lanc td.rapidos button { min-height: 34px; padding: 2px 10px; }
+  .lt-mes .rot-barra { display: block; }
+}
+
+.topo-paineis { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.rot-topo { font-size: 10px; text-transform: uppercase; letter-spacing: .7px; color: #a9b5ab; }
+.topo-paineis .seg > button { background: transparent; color: #e9ecdf; border-color: #3d4d41; min-height: 28px; padding: 3px 9px; }
+.topo-paineis .seg > button:hover { background: #2c3a30; }
+.topo-paineis .seg > button.fechado { background: transparent; color: #7f8a80; text-decoration: line-through; }
+.topo-paineis .seg > button[data-alternar=foco].ativo { background: var(--alerta); color: #1d1d1b; border-color: var(--alerta); }
+.topo .salvo { margin-left: 0; }
+.lt-comp { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.barra3d .wrap-etapa select { max-width: 140px; }
+details.mais > summary { font-size: 15px; padding: 3px 9px; }
+@media (max-width: 1180px) { .rot-topo { display: none; } }
+@media (max-width: 820px) { .topo-paineis { order: 6; width: 100%; overflow-x: auto; margin-left: 0; } .lt-comp { margin-left: 0; } }
+
+.topo { gap: 8px 10px; }
+.obra-sel select { min-width: 180px; }
+.lt-trilho { min-width: 200px; }

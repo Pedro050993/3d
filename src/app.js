@@ -111,7 +111,7 @@ function marcarSalvo(st) {
   if (st === 'pendente') { el.textContent = 'Gravando…'; el.className = 'salvo pend'; }
   else if (st === 'erro') { el.textContent = 'Erro ao gravar'; el.className = 'salvo erro'; }
   else if (st === 'offline') { el.textContent = 'Sem conexão · guardado no aparelho'; el.className = 'salvo erro'; }
-  else { el.textContent = `Salvo ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; el.className = 'salvo ok'; }
+  else { el.textContent = `Salvo ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; el.className = 'salvo ok'; el.title = 'Tudo gravado'; }
 }
 
 // ---------------------------------------------------------------- mutação
@@ -384,9 +384,10 @@ function renderLinhaTempo() {
   r.value = String(Math.max(0, app.meses.indexOf(app.mes)));
   $('#rotMes').innerHTML = `<b>${fmtMes(app.mes)}</b>${app.fora.includes(app.mes) ? ' <span class="aviso">fora do período</span>' : ''}`;
   $('#periodo').textContent = `${fmtMes(app.meses[0])} – ${fmtMes(app.meses[app.meses.length - 1])} · ${app.meses.length} meses`;
+  $('#rotComp').style.display = app.modo === 'mudou' || app.ladoALado ? '' : 'none';
   const sc = $('#selComp');
   sc.innerHTML = app.meses.map((m) => `<option value="${m}" ${m === app.mesComp ? 'selected' : ''}>${fmtMes(m)}</option>`).join('');
-  $('#btnPlay').textContent = app.tocando ? '⏸' : '▶';
+  $('#btnPlay').textContent = app.tocando ? '⏸ Pausar' : '▶ Evolução';
   $('#btnPlay').title = app.tocando ? 'Pausar' : 'Reproduzir a evolução mês a mês';
   // marcas de meses com lançamento
   const usados = new Set(Object.keys(app.obra.lancamentos).map((k) => k.split('|')[2]));
@@ -522,9 +523,11 @@ function ligarInterface() {
     };
   });
   $$('.lateral .fechar-painel').forEach((b) => { b.onclick = () => b.closest('.lateral').classList.remove('aberto'); });
-  $('#btnRecolherEditor').onclick = () => alternarPainel('editor');
+
   $$('[data-alternar]').forEach((b) => { b.onclick = () => alternarPainel(b.dataset.alternar); });
   $('#btnSairFoco').onclick = () => alternarPainel('foco');
+  // fecha o menu de opções ao clicar fora
+  document.addEventListener('click', (ev) => { const d = $('details.mais'); if (d && d.open && !ev.target.closest('details.mais')) d.open = false; });
   window.addEventListener('keydown', (ev) => {
     const t = ev.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
@@ -605,7 +608,7 @@ async function iniciar() {
     window.addEventListener('online', () => salvarAgora());
   }
   app.sombras = !matchMedia('(pointer: coarse)').matches;
-  app.explicaCurta = matchMedia('(max-width: 820px)').matches;
+  app.explicaCurta = true;
   const sincronizar = (origem) => {
     if (!app.ladoALado || !app.sincronizar) return;
     const alvo = origem === app.vA ? app.vB : app.vA;
