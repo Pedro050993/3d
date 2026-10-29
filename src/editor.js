@@ -80,7 +80,8 @@ function htmlFolha(e) {
         <div class="resumo-acoes">${conc ? `<button data-acao="reabrir" class="sec">Reabrir</button>${conc === 'finalizado' ? '<button data-acao="entregar" class="sec">Marcar entregue</button>' : ''}`
     : `<button data-acao="finalizar" class="ok">✓ Finalizar</button>`}
           <button data-acao="selPai" class="sec" title="Lançar no grupo deste elemento (rank, pavimento)">⬆ Rank inteiro</button></div>
-      </div>`}
+      </div>
+      <div class="navega">${(() => { const [ant, prox] = vizinhos(e); return `<button class="sec" data-ir-elem="${ant ? ant.id : ''}" ${ant ? '' : 'disabled'} title="${ant ? esc(ant.nome) : ''}">← ${ant ? esc(ant.nome) : 'Anterior'}</button><button class="primario" data-ir-elem="${prox ? prox.id : ''}" ${prox ? '' : 'disabled'} title="${prox ? esc(prox.nome) : ''}">${prox ? esc(prox.nome) : 'Próxima'} →</button>`; })()}</div>`}
     </div>
     ${config ? '' : `<div class="abas" role="tablist">
       <button class="${aba === 'avanco' ? 'ativa' : ''}" data-aba="avanco">Etapas</button>
@@ -454,6 +455,14 @@ export function ligarEditor() {
       return irParaMes(b.dataset.ir);
     }
     if (b.dataset.excluirLanc) return excluirLancamento(b.dataset.excluirLanc);
+    if (b.dataset.irElem) {
+      const atual = app.idx.elemById.get(app.selecao[0]);
+      const novo = app.idx.elemById.get(b.dataset.irElem);
+      if (!novo) return;
+      selecionar(novo.id, { origem: 'lista' });
+      if (!atual || atual.paiId !== novo.paiId) app.vA.focar([novo.id]);
+      return;
+    }
     if (b.dataset.rap) {
       const tr = b.closest('[data-et]');
       const atual = lerNum(tr.querySelector('.in-acum').value) || 0;
@@ -471,6 +480,25 @@ export function ligarEditor() {
     const acao = b.dataset.acao;
     if (acao && ACOES[acao]) return ACOES[acao](b);
   });
+}
+
+// elementos da mesma classe na ordem da lista (fase, trecho, rank, casa)
+function folhasEmOrdem(classe) {
+  const r = [];
+  const andar = (paiId) => {
+    for (const f of C.filhosDe(app.idx, paiId)) {
+      if (C.ehFolha(f)) { if (f.classe === classe) r.push(f); }
+      else andar(f.id);
+    }
+  };
+  andar(null);
+  return r;
+}
+
+function vizinhos(e) {
+  const lista = folhasEmOrdem(e.classe);
+  const i = lista.findIndex((x) => x.id === e.id);
+  return [lista[i - 1] || null, lista[i + 1] || null];
 }
 
 async function excluirLancamento(chaveEtMes) {

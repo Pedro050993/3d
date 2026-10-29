@@ -482,9 +482,9 @@ export function corAvanco(pct, status) {
 // ---------------------------------------------------------------- visualizador
 
 export class Visualizador {
-  constructor(container, { aoSelecionar, aoMover, aoColocarPersonagem, aoMudarCamera, aoSairCaminhada } = {}) {
+  constructor(container, { aoSelecionar, aoMover, aoColocarPersonagem, aoMudarCamera, aoSairCaminhada, aoPassar } = {}) {
     this.container = container;
-    this.cb = { aoSelecionar, aoMover, aoColocarPersonagem, aoMudarCamera, aoSairCaminhada };
+    this.cb = { aoSelecionar, aoMover, aoColocarPersonagem, aoMudarCamera, aoSairCaminhada, aoPassar };
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true;
@@ -590,6 +590,14 @@ export class Visualizador {
     else if (this.ferramenta === 'mao') cv.style.cursor = agarrando ? 'grabbing' : 'grab';
     else cv.style.cursor = agarrando ? 'grabbing' : 'default';
   }
+
+  setPlantaVisivel(v) {
+    this.plantaVisivel = v;
+    if (this.planta) this.planta.visible = v;
+    this.sujo = true;
+  }
+
+  temPlanta() { return !!this.planta; }
 
   setSombras(ativo) {
     this.renderer.shadowMap.enabled = ativo;
@@ -799,6 +807,7 @@ export class Visualizador {
       pl.position.set(base.x || 0, 0.015, base.z || 0);
       pl.renderOrder = -1;
       this.planta = pl;
+      pl.visible = this.plantaVisivel !== false;
       this.scene.add(pl);
     }
     if (this.limites) this._ajustarChao();
@@ -1029,6 +1038,17 @@ export class Visualizador {
         }
       }
     });
+    // passar o mouse: avisa qual elemento está sob o cursor (sem botão apertado)
+    let ultimoPasso = 0;
+    cv.addEventListener('pointermove', (ev) => {
+      if (ev.pointerType !== 'mouse' || ev.buttons || this.fp.ativo || !this.cb.aoPassar) return;
+      const t = performance.now();
+      if (t - ultimoPasso < 70) return;
+      ultimoPasso = t;
+      this.cb.aoPassar(this.pick(ev), ev.clientX, ev.clientY);
+    });
+    cv.addEventListener('pointerleave', () => this.cb.aoPassar && this.cb.aoPassar(null));
+    cv.addEventListener('pointerdown', () => this.cb.aoPassar && this.cb.aoPassar(null));
     cv.addEventListener('pointermove', (ev) => {
       if (this.fp.ativo && down && down.id === ev.pointerId) {
         const dx = ev.clientX - down.x;

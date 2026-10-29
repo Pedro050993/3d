@@ -526,6 +526,50 @@ await p.waitForTimeout(200);
 ok(await A(() => !document.body.classList.contains('foco')), 'botão “Mostrar painéis” reabre tudo');
 
 // ------------------------------------------------------------------
+passo('Itens imediatos: próxima casa, planta, dica e lista');
+await uso('lancar');
+await selecionarPorBusca('Casa 145');
+await p.click('#editor .navega .primario');
+await p.waitForTimeout(200);
+ok((await p.textContent('#editor .nome-alvo')).includes('Casa 146'), 'Próxima → vai para a casa seguinte do rank');
+await p.click('#editor .navega .primario');
+await p.click('#editor .navega .primario');
+await p.waitForTimeout(200);
+ok((await p.textContent('#editor .nome-alvo')).includes('Casa 142'), 'no fim do rank segue para o próximo rank (Casa 142)');
+await p.click('#editor .navega .sec');
+await p.waitForTimeout(150);
+ok((await p.textContent('#editor .nome-alvo')).includes('Casa 147'), '← Anterior volta');
+const temPlanta = await A(() => __app.vA.temPlanta());
+await p.click('#btnPlanta');
+ok(temPlanta && await A(() => __app.vA.planta.visible === false && !__app.mostrarPlanta), 'botão Planta esconde a planta de fundo');
+await p.click('#btnPlanta');
+ok(await A(() => __app.vA.planta.visible === true), 'e mostra de novo');
+const pt = await A(() => {
+  const e = __app.obra.elementos.find((x) => x.nome === 'Casa 100');
+  const v = __app.vA.objs.get(e.id).grupo.position.clone(); v.y = 1; v.project(__app.vA.camera);
+  const r = __app.vA.canvas.getBoundingClientRect();
+  return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
+});
+await p.click('#btnGeral');
+await p.waitForTimeout(300);
+const pt2 = await A(() => {
+  const e = __app.obra.elementos.find((x) => x.nome === 'Casa 100');
+  const v = __app.vA.objs.get(e.id).grupo.position.clone(); v.y = 1; v.project(__app.vA.camera);
+  const r = __app.vA.canvas.getBoundingClientRect();
+  return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
+});
+void pt;
+await p.mouse.move(pt2.x - 3, pt2.y);
+await p.mouse.move(pt2.x, pt2.y, { steps: 3 });
+await p.waitForTimeout(250);
+const dica = await A(() => { const d = document.querySelector('#dicaElem'); return d.hidden ? '' : d.textContent; });
+ok(/Casa (099|100|101)/.test(dica) && /%/.test(dica), `dica ao passar o mouse (“${dica.replace(/\s+/g, ' ').trim().slice(0, 50)}”)`);
+await foto('16-dica');
+await p.fill('#buscaElem', '');
+const det = await A(() => [...document.querySelectorAll('#arvore .no.grupo')].map((n) => n.querySelector('.det')?.textContent || '').find((t) => /ranks R05–R08/.test(t)) || '');
+ok(/casas 124–135/.test(det), `lista mostra o conteúdo do trecho (“${det}”)`);
+
+// ------------------------------------------------------------------
 passo('Maquete em tela cheia');
 await p.click('#btnExpandir');
 await p.waitForTimeout(400);

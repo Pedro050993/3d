@@ -59,6 +59,7 @@ export function renderArvore() {
         ${temFilhos ? `<button class="caret ${aberto ? 'aberto' : ''}" data-caret="${e.id}" aria-label="${aberto ? 'Recolher' : 'Expandir'}">▸</button>` : '<span class="caret vazio"></span>'}
         <span class="nome" title="${esc(rotCategoria(e.categoria))}">${esc(e.nome)}</span>${marca}
         <span class="mini"><i style="width:${Math.min(100, p)}%;background:${cor}"></i></span><span class="pc">${num(p, 0)}%</span>
+        ${folha ? '' : (() => { const d = detalheGrupo(e, fl); return d ? `<span class="det">${esc(d)}</span>` : ''; })()}
       </div>`);
       if (temFilhos && aberto) desenhar(e.id, prof + 1);
     }
@@ -68,6 +69,33 @@ export function renderArvore() {
   const nDocs = app.obra.documentos.length;
   const d = $('#resumoDocs');
   if (d) d.innerHTML = `<button class="link" data-acao="docs">📎 Documentos da obra (${nDocs})</button> <span class="dica">referência, não são elementos construídos</span>`;
+}
+
+// "R01–R04 · casas 136–147 · 1 área comum": o que tem dentro do grupo, para achar no campo
+const faixa = (lista) => (lista.length === 1 ? lista[0] : `${lista[0]}–${lista[lista.length - 1]}`);
+function detalheGrupo(g, folhasG) {
+  const { idx } = app;
+  const partes = [];
+  const ranks = [];
+  const pilha = [...C.filhosDe(idx, g.id)];
+  while (pilha.length) {
+    const x = pilha.shift();
+    if (x.categoria === 'rank') ranks.push(x.codigo || x.nome);
+    if (!C.ehFolha(x)) pilha.push(...C.filhosDe(idx, x.id));
+  }
+  if (ranks.length) partes.push(ranks.length > 1 ? `${ranks.length} ranks ${faixa(ranks.sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true })))}` : ranks[0]);
+  const un = folhasG.filter((f) => f.classe === 'unidade');
+  if (un.length) {
+    const nums = un.map((f) => Number(f.codigo)).filter(Number.isFinite).sort((a, b) => a - b);
+    const nome = un[0].categoria === 'apartamento' ? 'aptos' : un[0].categoria === 'lote' ? 'lotes' : 'casas';
+    const seguidos = nums.length === un.length && nums.length > 1 && nums[nums.length - 1] - nums[0] === nums.length - 1;
+    partes.push(seguidos ? `${nome} ${String(nums[0]).padStart(3, '0')}–${String(nums[nums.length - 1]).padStart(3, '0')}` : `${un.length} ${nome}`);
+  }
+  const ac = folhasG.filter((f) => f.classe === 'anexo').length;
+  if (ac) partes.push(`${ac} área${ac > 1 ? 's' : ''} comu${ac > 1 ? 'ns' : 'm'}`);
+  const inf = folhasG.filter((f) => f.classe === 'infra').length;
+  if (inf) partes.push(`${inf} trecho${inf > 1 ? 's' : ''} de via`);
+  return partes.join(' · ');
 }
 
 export function ligarArvore() {

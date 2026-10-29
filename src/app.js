@@ -234,6 +234,7 @@ export async function atualizarPlanta() {
   if (!doc) {
     app.vA?.setPlanta(null, null);
     app.vB?.setPlanta(null, null);
+    if (app.vA) definirPlanta(app.mostrarPlanta, { salvar: false });
     return;
   }
   try {
@@ -270,6 +271,7 @@ export async function atualizarPlanta() {
     }
     app.vA.setPlanta(img, doc.base);
     app.vB?.setPlanta(img, doc.base);
+    definirPlanta(app.mostrarPlanta, { salvar: false });
   } catch (e) {
     console.warn(e);
     toast(`Não foi possível usar “${doc.nome}” como planta: ${e.message}. Converta a página em PNG/JPG e anexe a imagem.`, 'erro');
@@ -564,6 +566,7 @@ function ligarInterface() {
   $$('[data-alternar]').forEach((b) => { b.onclick = () => alternarPainel(b.dataset.alternar); });
   $$('[data-uso]').forEach((b) => { b.onclick = () => definirUso(b.dataset.uso); });
   $$('[data-ferramenta]').forEach((b) => { b.onclick = () => definirFerramenta(b.dataset.ferramenta); });
+  $('#btnPlanta').onclick = () => definirPlanta(!app.mostrarPlanta);
   window.addEventListener('keydown', (ev) => {
     const t = ev.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
@@ -652,6 +655,36 @@ function aplicarPaineis() {
 
 // ---------------------------------------------------------------- o que fazer: lançar, acompanhar, configurar
 
+// planta de fundo ligada ou desligada (preferência do aparelho)
+app.mostrarPlanta = (() => { try { return localStorage.getItem('obras3d:planta') !== 'nao'; } catch { return true; } })();
+export function definirPlanta(v, { salvar = true } = {}) {
+  app.mostrarPlanta = v;
+  app.vA.setPlantaVisivel(v);
+  app.vB.setPlantaVisivel(v);
+  const b = $('#btnPlanta');
+  b.classList.toggle('ativo', v && app.vA.temPlanta());
+  b.disabled = !app.vA.temPlanta();
+  b.title = app.vA.temPlanta() ? (v ? 'Esconder a planta de fundo' : 'Mostrar a planta de fundo') : 'Esta obra não tem planta de fundo (Configurar › Documentos)';
+  if (salvar) { try { localStorage.setItem('obras3d:planta', v ? 'sim' : 'nao'); } catch { /* sem armazenamento */ } }
+}
+
+// nome e situação ao passar o mouse sobre a maquete
+function mostrarDica(id, x, y) {
+  const d = $('#dicaElem');
+  if (!id || !app.idx) { d.hidden = true; return; }
+  const e = app.idx.elemById.get(id);
+  if (!e) { d.hidden = true; return; }
+  const p = C.progElem(app.idx, e, app.mes);
+  const st = C.statusElem(app.idx, e, app.mes);
+  const anc = C.ancestrais(app.idx, id);
+  const grupo = anc.length ? anc[anc.length - 1].nome : '';
+  d.innerHTML = `<b>${esc(e.nome)}</b>${grupo ? ` <span>${esc(grupo)}</span>` : ''}<div class="de-lin"><i style="width:${Math.min(100, p)}%"></i></div><span class="de-st">${num(p, 0)}% · ${esc(C.ROTULO_STATUS[st])}</span>`;
+  const r = $('#cenas').getBoundingClientRect();
+  d.style.left = `${Math.min(x - r.left + 14, r.width - 200)}px`;
+  d.style.top = `${Math.max(4, y - r.top - 64)}px`;
+  d.hidden = false;
+}
+
 // ferramenta de arraste da maquete: mãozinha (desloca) ou girar
 app.ferramenta = (() => { try { return localStorage.getItem('obras3d:ferramenta') === 'girar' ? 'girar' : 'mao'; } catch { return 'mao'; } })();
 export function definirFerramenta(f, { salvar = true } = {}) {
@@ -716,6 +749,7 @@ async function iniciar() {
       iniciarCaminhada();
     },
     aoMudarCamera: sincronizar,
+    aoPassar: mostrarDica,
     aoSairCaminhada: () => {
       mostrarControlesCaminhada(false);
       app.obra.personagem = { x: app.vA.fp.pos.x, z: app.vA.fp.pos.z };

@@ -659,3 +659,16 @@ body.lt-recolhida .lt-leg { display: none; }
 .linha-tempo { flex-wrap: nowrap; }
 .mes-chip.sem-dados .mc-col { background: repeating-linear-gradient(0deg, #f1efe7 0 6px, #e7e4d9 6px 7px); }
 button.ativo:hover:not(:disabled), .seg > button.ativo:hover:not(:disabled) { background: var(--verde2); color: #fff; border-color: var(--verde2); }
+
+/* dica ao passar o mouse */
+.dica-elem { position: absolute; z-index: 7; pointer-events: none; min-width: 150px; max-width: 220px; background: rgba(31,42,34,.94); color: #fff; border-radius: 8px; padding: 6px 9px; font-size: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+.dica-elem b { font-size: 13px; }
+.dica-elem span { color: #c9d2c7; }
+.dica-elem .de-lin { height: 5px; border-radius: 3px; background: rgba(255,255,255,.2); margin: 5px 0 3px; overflow: hidden; }
+.dica-elem .de-lin i { display: block; height: 100%; background: #7ed39a; }
+.dica-elem .de-st { color: #fff; }
+
+.navega { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.navega button { min-height: 36px; overflow: hidden; text-overflow: ellipsis; }
+.navega button.primario { font-weight: 600; }
+.no .det { grid-column: 2 / -1; font-size: 10.5px; color: var(--tinta2); margin-top: -2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
