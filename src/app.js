@@ -526,6 +526,9 @@ function ligarInterface() {
 
   $$('[data-alternar]').forEach((b) => { b.onclick = () => alternarPainel(b.dataset.alternar); });
   $('#btnSairFoco').onclick = () => alternarPainel('foco');
+  $('#btnExpandir').onclick = alternarTelaCheia;
+  document.addEventListener('fullscreenchange', () => marcarTelaCheia(!!document.fullscreenElement));
+  window.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && $('#cenas').classList.contains('expandida') && !app.vA.fp.ativo) alternarTelaCheia(); });
   // fecha o menu de opções ao clicar fora
   document.addEventListener('click', (ev) => { const d = $('details.mais'); if (d && d.open && !ev.target.closest('details.mais')) d.open = false; });
   window.addEventListener('keydown', (ev) => {
@@ -539,6 +542,27 @@ function ligarInterface() {
   window.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && app.vA.modoColocar) $('#btnCancelarColocar').click();
   });
+}
+
+// ---------------------------------------------------------------- maquete em tela cheia
+
+function marcarTelaCheia(ativo) {
+  $('#cenas').classList.toggle('expandida', ativo);
+  $('#btnExpandir').textContent = ativo ? '✕ Sair da tela cheia' : '⛶ Expandir maquete';
+  requestAnimationFrame(() => { app.vA.redimensionar(); app.vB.redimensionar(); });
+}
+
+async function alternarTelaCheia() {
+  const el = $('#cenas');
+  const ativo = el.classList.contains('expandida');
+  if (ativo) {
+    if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch { /* já saiu */ } }
+    marcarTelaCheia(false);
+    return;
+  }
+  // tela cheia do navegador quando permitido; senão ocupa a janela inteira
+  try { if (el.requestFullscreen) await el.requestFullscreen(); } catch { /* sem suporte: segue só com o modo janela */ }
+  marcarTelaCheia(true);
 }
 
 // ---------------------------------------------------------------- painéis (abrir e fechar)

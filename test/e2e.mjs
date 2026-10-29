@@ -474,6 +474,13 @@ const largura1 = await p.locator('#cenaA').evaluate((e) => e.clientWidth);
 const altura1 = await p.locator('#cenaA').evaluate((e) => e.clientHeight);
 ok(largura1 > largura0 + 400, `maquete ganha espaço (${largura0} → ${largura1} px de largura)`);
 ok(await A(() => document.body.classList.contains('foco')), 'com os três fechados entra em foco');
+ok(await A(() => ['esq', 'dir', 'baixo'].every((k) => getComputedStyle(document.querySelector('.aba-borda.' + k)).display !== 'none')), 'cada painel fechado mostra uma alça para reabrir');
+await p.click('.aba-borda.baixo');
+await p.waitForTimeout(200);
+ok(await A(() => getComputedStyle(document.querySelector('#editor')).display !== 'none' && getComputedStyle(document.querySelector('.aba-borda.baixo')).display === 'none'), 'alça reabre o painel de lançamento');
+await p.click('.aba-borda.baixo').catch(() => {});
+await p.click('.grupo-bt.paineis [data-alternar=editor]');
+await p.waitForTimeout(200);
 await foto('13-foco-maquete');
 await p.reload();
 await pronto();
@@ -487,6 +494,17 @@ ok(await A(() => document.body.classList.contains('foco')), 'tecla F alterna o f
 await p.keyboard.press('f');
 const altura2 = await p.locator('#cenaA').evaluate((e) => e.clientHeight);
 ok(altura1 > altura2, `fechar o lançamento aumenta a altura da maquete (${altura2} → ${altura1} px)`);
+
+// ------------------------------------------------------------------
+passo('Maquete em tela cheia');
+await p.click('#btnExpandir');
+await p.waitForTimeout(400);
+const tc = await A(() => { const r = document.querySelector('#cenas').getBoundingClientRect(); return { w: r.width, h: r.height, vw: innerWidth, vh: innerHeight }; });
+ok(tc.w >= tc.vw - 2 && tc.h >= tc.vh - 2, `maquete ocupa a tela inteira (${Math.round(tc.w)}×${Math.round(tc.h)})`);
+await foto('15-tela-cheia');
+await p.click('#btnExpandir');
+await p.waitForTimeout(300);
+ok(await A(() => !document.querySelector('#cenas').classList.contains('expandida')), 'mesmo botão sai da tela cheia');
 
 // ------------------------------------------------------------------
 passo('Toque (celular)');
