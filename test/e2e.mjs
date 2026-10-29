@@ -136,6 +136,17 @@ const t = await p.textContent('#toast');
 ok(/0% e 100%|fora/.test(t), `aviso de validação exibido (“${t.trim().slice(0, 60)}…”)`);
 
 // ------------------------------------------------------------------
+passo('Excluir avanço');
+await irMes('2026-02');
+await selecionarPorBusca('Casa 001');
+await A(() => document.activeElement && document.activeElement.blur());
+await p.waitForTimeout(150);
+await linha('Fundações').locator('[data-excluir-lanc]').click();
+await p.click('.dlg-rodape .perigo');
+await p.waitForTimeout(200);
+ok(await pctDe('Casa 001', 'Fundações', '2026-02') === 0 && (await pctDe('Casa 001', 'Alvenaria', '2026-02')) === 45, 'excluir o lançamento de uma etapa no mês (as outras ficam)');
+
+// ------------------------------------------------------------------
 passo('Lançamento coletivo no rank');
 await irMes('2026-02');
 await selecionarPorBusca('Rank 02');
@@ -260,8 +271,26 @@ await p.mouse.move(box.x + box.width / 2 + 160, box.y + box.height / 2 + 30, { s
 await p.mouse.up();
 await p.waitForTimeout(300);
 const cam1 = await A(() => __app.vA.camera.position.toArray());
-ok(cam0.some((v, i) => Math.abs(v - cam1[i]) > 1), 'arrastar com o mouse gira a vista');
+ok(cam0.some((v, i) => Math.abs(v - cam1[i]) > 1), 'arrastar com a mãozinha desloca a vista');
+ok(await A(() => __app.vA.canvas.style.cursor === 'grab' || __app.vA.canvas.style.cursor === 'grabbing'), 'cursor de mãozinha na maquete');
+const dist0 = await A(() => __app.vA.camera.position.distanceTo(__app.vA.controls.target));
+const alvo0 = await A(() => __app.vA.controls.target.toArray());
+const alvo1 = await A(() => __app.vA.controls.target.toArray());
+void dist0; void alvo0; void alvo1;
+await p.click('#btnGirar');
+const camG0 = await A(() => __app.vA.camera.position.toArray());
+const tgtG0 = await A(() => __app.vA.controls.target.toArray());
+await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+await p.mouse.down();
+await p.mouse.move(box.x + box.width / 2 + 160, box.y + box.height / 2 + 30, { steps: 8 });
+await p.mouse.up();
+await p.waitForTimeout(300);
+const camG1 = await A(() => __app.vA.camera.position.toArray());
+const tgtG1 = await A(() => __app.vA.controls.target.toArray());
+ok(camG0.some((v, i) => Math.abs(v - camG1[i]) > 1) && tgtG0.every((v, i) => Math.abs(v - tgtG1[i]) < 0.5), 'no modo Girar, arrastar gira em torno do mesmo ponto');
+await p.click('#btnMao');
 const d0 = await A(() => __app.vA.camera.position.distanceTo(__app.vA.controls.target));
+await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
 await p.mouse.wheel(0, -600);
 await p.waitForTimeout(400);
 const d1 = await A(() => __app.vA.camera.position.distanceTo(__app.vA.controls.target));
@@ -416,8 +445,7 @@ ok(impId !== vfId, 'obra importada tem identificador próprio');
 
 // ------------------------------------------------------------------
 passo('Limpar avanços só da obra selecionada');
-await p.click('#btnDados');
-await p.click('[data-x=limpar]');
+await p.click('#btnZerar');
 await p.fill('#lConf', 'LIMPAR');
 const [bk] = await Promise.all([p.waitForEvent('download'), p.click('.dlg-rodape .perigo')]);
 ok(!!bk, 'cópia de segurança baixada antes da limpeza');

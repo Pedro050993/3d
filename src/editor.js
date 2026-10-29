@@ -106,7 +106,7 @@ function tabelaFolha(e) {
     const temLanc = !!app.obra.lancamentos[C.chave(e.id, et.id, mes)];
     return `<div class="etapa-card ${pAt >= 99.99 ? 'completa' : pAt > 0 ? 'andando' : ''}" data-et="${et.id}">
       <div class="ec-topo">
-        <span class="et"><b>${esc(et.nome)}</b>${temLanc ? '<span class="pt" title="Já tem lançamento neste mês">● lançado no mês</span>' : ''}</span>
+        <span class="et"><b>${esc(et.nome)}</b>${temLanc ? `<span class="pt" title="Já tem lançamento neste mês">● lançado no mês <button class="link perigo" data-excluir-lanc="${et.id}|${mes}" title="Excluir o que foi lançado nesta etapa em ${fmtMes(mes)}">🗑 excluir</button></span>` : ''}</span>
         <label class="ec-pct"><input class="in-acum" inputmode="decimal" value="${num(pAt, 1)}" aria-label="Total agora em % ${esc(et.nome)}"><span>%</span></label>
       </div>
       <input type="range" class="barra" min="0" max="100" step="0.5" value="${pAt}" style="--ant:${pAnt}%;--atu:${pAt}%" aria-label="Total agora ${esc(et.nome)}">
@@ -122,7 +122,7 @@ function tabelaFolha(e) {
     <div class="ed-acoes">
       ${app.modo === 'etapa' && app.etapaFiltro !== 'todas' ? '<span class="aviso">Mostrando só uma etapa</span>' : ''}
       <button class="sec" data-acao="tudo100">✓ Tudo 100%</button>
-      <button class="sec" data-acao="zerarMes">Desfazer lançamentos deste mês</button></div>
+      <button class="sec perigo" data-acao="zerarMes">🗑 Excluir lançamentos deste mês</button></div>
     <p class="dica formula">Total agora = até o mês anterior + o que foi feito neste mês. Grava sozinho ao soltar a barra ou sair do campo.</p>`;
 }
 
@@ -135,7 +135,7 @@ function historicoFolha(e) {
   const linhas = lanc.map((x) => {
     const tot = C.total(e, x.et);
     const ac = C.acumulado(idx, e.id, x.et.id, x.comp);
-    return `<tr><td>${fmtMes(x.comp)}</td><td>${esc(x.et.nome)}</td><td class="n">${x.et.unidade === '%' ? pp((x.v.v / tot) * 100) : `${num(x.v.v, 2)} ${esc(x.et.unidade)}`}</td><td class="n">${pct((ac / tot) * 100)}</td><td>${x.v.origem === 'coletivo' ? 'coletivo' : 'individual'}</td><td><button class="link" data-ir="${x.comp}">ir ao mês</button></td></tr>`;
+    return `<tr><td>${fmtMes(x.comp)}</td><td>${esc(x.et.nome)}</td><td class="n">${x.et.unidade === '%' ? pp((x.v.v / tot) * 100) : `${num(x.v.v, 2)} ${esc(x.et.unidade)}`}</td><td class="n">${pct((ac / tot) * 100)}</td><td>${x.v.origem === 'coletivo' ? 'coletivo' : 'individual'}</td><td><button class="link" data-ir="${x.comp}">ir ao mês</button> <button class="link perigo" data-excluir-lanc="${x.et.id}|${x.comp}">excluir</button></td></tr>`;
   }).join('');
   const evs = C.eventosConclusao(obra, e.id).slice().sort((a, b) => (a.comp < b.comp ? -1 : 1));
   const conc = evs.map((ev) => `<tr><td>${fmtMes(ev.comp)}</td><td>${ev.acao === 'finalizar' ? 'Finalizado' : ev.acao === 'entregar' ? 'Entregue' : 'Reaberto'}</td><td>${esc(ev.obs || '')}</td>
@@ -272,6 +272,7 @@ function coletivo(a) {
       <div class="linha"><input id="colValDef" inputmode="decimal" value="${st.modo !== 'somar' ? esc(st.valor ?? '') : ''}" placeholder="ex.: 60"> %</div>
       <label class="radio"><input type="radio" name="colModo" value="somar" ${st.modo === 'somar' ? 'checked' : ''}> <b>Somar no mês</b> (realizado adicional)</label>
       <div class="linha"><input id="colValSom" inputmode="decimal" value="${st.modo === 'somar' ? esc(st.valor ?? '') : ''}" placeholder="ex.: 10"> p.p.</div>
+      <label class="radio"><input type="radio" name="colModo" value="zerar" ${st.modo === 'zerar' ? 'checked' : ''}> <b>Excluir</b> o que foi lançado em ${fmtMes(app.mes)} nas etapas marcadas</label>
       <label class="campo"><span>Observação (opcional)</span><input id="colObs" value="${esc(st.obs || '')}"></label>
       <button class="primario" data-acao="colPrevia">Ver quem será afetado</button>
     </div>
@@ -452,6 +453,7 @@ export function ligarEditor() {
       const { irParaMes } = await import('./app.js');
       return irParaMes(b.dataset.ir);
     }
+    if (b.dataset.excluirLanc) return excluirLancamento(b.dataset.excluirLanc);
     if (b.dataset.rap) {
       const tr = b.closest('[data-et]');
       const atual = lerNum(tr.querySelector('.in-acum').value) || 0;
@@ -469,6 +471,28 @@ export function ligarEditor() {
     const acao = b.dataset.acao;
     if (acao && ACOES[acao]) return ACOES[acao](b);
   });
+}
+
+async function excluirLancamento(chaveEtMes) {
+  const [etId, comp] = chaveEtMes.split('|');
+  const e = app.idx.elemById.get(app.selecao[0]);
+  const et = app.idx.etapasById.get(etId);
+  if (!e || !et || !app.obra.lancamentos[C.chave(e.id, et.id, comp)]) return;
+  const val = C.validarRealizado(app.idx, e, et, comp, 0);
+  if (!val.ok) {
+    const m = val.erros[0];
+    return toast(`Não dá para excluir: o total em ${fmtMes(m.comp)} ficaria em ${num(m.pct)}%. Ajuste os meses seguintes antes.`, 'erro');
+  }
+  const retro = C.ehCorrecao(app.idx, e, et, comp);
+  let motivo = '';
+  if (retro) {
+    motivo = await perguntar('Excluir lançamento de mês anterior', `Motivo da exclusão (${et.nome}, ${fmtMes(comp)})`, '', true, 'Os meses seguintes mantêm o que foi feito em cada um e o total é recalculado.');
+    if (motivo === null) return;
+  } else if (!(await confirmar('Excluir lançamento', `Excluir o que foi lançado em <b>${esc(et.nome)}</b> de ${esc(e.nome)} em ${fmtMes(comp)}?`, 'Excluir', true))) return;
+  let r;
+  mutar((o, idx) => { r = C.lancar(o, idx, { elemId: e.id, etapaId: et.id, comp, realizadoQtd: 0, motivo }); });
+  if (r && !r.ok) toast(r.erro, 'erro');
+  else toast(`Lançamento de ${et.nome} em ${fmtMes(comp)} excluído.`);
 }
 
 function marcarPendente(id, v) {
@@ -630,7 +654,7 @@ const ACOES = {
     const a = alvoAtual();
     const st = app.coletivo;
     const modo = $('input[name=colModo]:checked')?.value || 'definir';
-    const v = lerNum(modo === 'somar' ? $('#colValSom').value : $('#colValDef').value);
+    const v = modo === 'zerar' ? 0 : lerNum(modo === 'somar' ? $('#colValSom').value : $('#colValDef').value);
     st.modo = modo;
     st.obs = $('#colObs').value;
     if (!st.etapas.size) return toast('Marque pelo menos uma etapa.', 'erro');

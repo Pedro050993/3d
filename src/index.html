@@ -60,6 +60,10 @@
         <button data-modo="mudou" title="O que avançou entre dois meses">O que mudou</button>
         <span id="wrapEtapa" class="wrap-etapa"><button data-modo="etapa" title="Ver e lançar uma etapa só">Uma etapa</button><select id="selEtapa" title="Escolha a etapa"></select></span>
       </div>
+      <div class="seg" role="group" aria-label="Arrastar para">
+        <button id="btnMao" data-ferramenta="mao" title="Arrastar desloca a maquete (tecla H alterna)">✋ Mover</button>
+        <button id="btnGirar" data-ferramenta="girar" title="Arrastar gira a maquete (tecla H alterna)">⟳ Girar</button>
+      </div>
       <div class="seg" role="group" aria-label="Câmera">
         <button id="btnGeral" title="Ver a obra inteira">⌂ Geral</button>
         <button id="btnTopo" title="Ver de cima, como na planta">⊤ De cima</button>
@@ -133,7 +137,8 @@
           <button id="btnEditarObra" class="cfg"><b>✎ Dados da obra</b><span>Nome, datas, casas por rank</span></button>
           <button id="btnEtapas" class="cfg"><b>☰ Etapas</b><span>Etapas, pesos e unidades de medição</span></button>
           <button id="btnDocs" class="cfg"><b>📎 Documentos</b><span>Plantas e arquivos de referência</span></button>
-          <button id="btnDados" class="cfg"><b>⇅ Exportar e importar</b><span>Cópia da obra, planilha Excel, limpar avanços</span></button>
+          <button id="btnDados" class="cfg"><b>⇅ Exportar e importar</b><span>Cópia da obra, planilha Excel</span></button>
+          <button id="btnZerar" class="cfg perigo-cfg"><b>🧹 Zerar avanços</b><span>Apaga todos os lançamentos desta obra para recomeçar</span></button>
         </div>
         <div id="avisos" class="avisos"></div>
         <h3 class="sub-config">Elemento selecionado</h3>

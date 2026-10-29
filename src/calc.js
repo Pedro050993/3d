@@ -335,7 +335,8 @@ export function previaColetivo(idx, { alvos, etapaIds, comp, modo, valorPct }) {
       const ant = acumulado(idx, e.id, etId, mesAnterior(comp));
       const atual = acumulado(idx, e.id, etId, comp);
       let novoV;
-      if (modo === 'somar') novoV = realizado(idx, e.id, etId, comp) + (valorPct / 100) * tot;
+      if (modo === 'zerar') novoV = 0;
+      else if (modo === 'somar') novoV = realizado(idx, e.id, etId, comp) + (valorPct / 100) * tot;
       else novoV = (valorPct / 100) * tot - ant;
       novoV = arred(novoV);
       const val = validarRealizado(idx, e, et, comp, novoV);

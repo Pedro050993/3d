@@ -452,6 +452,7 @@ function ligarInterface() {
   $('#btnEtapas').onclick = () => Modais.modalEtapas();
   $('#btnDocs').onclick = () => Modais.modalDocumentos();
   $('#btnDados').onclick = () => Modais.modalDados();
+  $('#btnZerar').onclick = () => Modais.limparObra();
   $('#btnAjuda').onclick = () => Modais.modalAjuda();
   document.body.addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-acao="docs"]');
@@ -527,6 +528,13 @@ function ligarInterface() {
 
   $$('[data-alternar]').forEach((b) => { b.onclick = () => alternarPainel(b.dataset.alternar); });
   $$('[data-uso]').forEach((b) => { b.onclick = () => definirUso(b.dataset.uso); });
+  $$('[data-ferramenta]').forEach((b) => { b.onclick = () => definirFerramenta(b.dataset.ferramenta); });
+  window.addEventListener('keydown', (ev) => {
+    const t = ev.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    if ((ev.key === 'h' || ev.key === 'H') && !ev.ctrlKey && !ev.metaKey && !app.vA.fp.ativo) definirFerramenta(app.ferramenta === 'mao' ? 'girar' : 'mao');
+  });
+  definirFerramenta(app.ferramenta, { salvar: false });
   $('#btnSairFoco').onclick = () => alternarPainel('foco');
   $('#btnExpandir').onclick = alternarTelaCheia;
   document.addEventListener('fullscreenchange', () => marcarTelaCheia(!!document.fullscreenElement));
@@ -608,6 +616,16 @@ function aplicarPaineis() {
 }
 
 // ---------------------------------------------------------------- o que fazer: lançar, acompanhar, configurar
+
+// ferramenta de arraste da maquete: mãozinha (desloca) ou girar
+app.ferramenta = (() => { try { return localStorage.getItem('obras3d:ferramenta') === 'girar' ? 'girar' : 'mao'; } catch { return 'mao'; } })();
+export function definirFerramenta(f, { salvar = true } = {}) {
+  app.ferramenta = f;
+  app.vA.setFerramenta(f);
+  app.vB.setFerramenta(f);
+  $$('[data-ferramenta]').forEach((b) => b.classList.toggle('ativo', b.dataset.ferramenta === f));
+  if (salvar) { try { localStorage.setItem('obras3d:ferramenta', f); } catch { /* sem armazenamento */ } }
+}
 
 function lerUso() {
   try { const u = localStorage.getItem('obras3d:uso'); return ['lancar', 'acompanhar', 'configurar'].includes(u) ? u : 'lancar'; } catch { return 'lancar'; }

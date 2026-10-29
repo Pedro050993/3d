@@ -582,6 +582,7 @@ export async function importarObra(arquivoDado) {
 export async function limparObra() {
   if (!exigir('admin')) return;
   const a = C.alcanceLimpeza(app.obra);
+  if (!a.nLanc && !a.nConc) return toast('Esta obra já está sem avanços lançados.');
   const r = await dialogo({
     titulo: `Limpar avanços de ${app.obra.nome}`,
     html: `<p>Serão apagados nesta obra:</p><ul><li><b>${a.nLanc}</b> lançamento(s) em ${a.nMeses} mês(es), de ${a.nElems} elemento(s)</li><li><b>${a.nConc}</b> registro(s) de conclusão/entrega</li><li>${a.nRev} item(ns) do histórico de alterações</li></ul>

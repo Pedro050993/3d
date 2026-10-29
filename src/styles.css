@@ -622,3 +622,6 @@ body.com-linha-tempo .linha-tempo { display: flex; }
   .barra3d details.mais { margin-left: 0; flex: 0 0 auto; }
   details.mais .pop { position: fixed; right: 12px; left: 12px; top: auto; width: auto; }
 }
+
+.cfg.perigo-cfg { border-color: #e4b3ae; background: #fdf3f1; }
+.cfg.perigo-cfg b { color: var(--erro); }

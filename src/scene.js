@@ -503,6 +503,7 @@ export class Visualizador {
     this.controls.dampingFactor = 0.12;
     this.controls.maxPolarAngle = Math.PI / 2 - 0.03;
     this.controls.screenSpacePanning = false;
+    this.setFerramenta('mao');
     this.controls.listenToKeyEvents(window);
     this.controls.keys = { LEFT: 'ArrowLeft', UP: 'ArrowUp', RIGHT: 'ArrowRight', BOTTOM: 'ArrowDown' };
     this.controls.addEventListener('change', () => {
@@ -564,6 +565,30 @@ export class Visualizador {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.sujo = true;
+  }
+
+  // ferramenta do arraste com o botão esquerdo / um dedo: 'mao' desloca, 'girar' gira
+  setFerramenta(f) {
+    this.ferramenta = f;
+    const c = this.controls;
+    if (f === 'mao') {
+      c.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+      c.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
+    } else {
+      c.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+      c.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+    }
+    this._cursor();
+  }
+
+  _cursor(agarrando = false) {
+    if (!this.canvas) return;
+    const cv = this.canvas;
+    if (this.fp && this.fp.ativo) cv.style.cursor = 'crosshair';
+    else if (this.modoColocar) cv.style.cursor = 'copy';
+    else if (this.modoMover) cv.style.cursor = 'move';
+    else if (this.ferramenta === 'mao') cv.style.cursor = agarrando ? 'grabbing' : 'grab';
+    else cv.style.cursor = agarrando ? 'grabbing' : 'default';
   }
 
   setSombras(ativo) {
@@ -978,6 +1003,9 @@ export class Visualizador {
       }
       return null;
     };
+    cv.addEventListener('pointerdown', () => this._cursor(true));
+    window.addEventListener('pointerup', () => this._cursor(false));
+    cv.addEventListener('pointerenter', () => this._cursor(false));
     cv.addEventListener('pointerdown', (ev) => {
       down = { x: ev.clientX, y: ev.clientY, t: performance.now(), id: ev.pointerId };
       if (this.fp.ativo) {
