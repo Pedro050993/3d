@@ -106,17 +106,21 @@
     </div>
 
     <div class="linha-tempo">
-      <div class="lt-trilho">
-        <input id="rangeMes" type="range" min="0" max="0" step="1" aria-label="Mês">
-        <div id="marcasMes" class="marcas"></div>
+      <div class="lt-cab">
+        <b class="lt-tit">Linha do tempo</b>
         <span id="periodo" class="periodo"></span>
+        <span class="lt-leg"><i class="lg-bar"></i> avanço acumulado <i class="lg-pt"></i> mês com lançamento <span class="lg-dica">· toque: ir ao mês · Shift+toque: comparar</span></span>
+        <div class="lt-acoes">
+          <button id="btnPlay" class="sec" title="Ver a obra evoluindo mês a mês">▶ Evolução</button>
+          <select id="selVel" title="Velocidade da evolução"><option value="1600">devagar</option><option value="900" selected>normal</option><option value="450">rápido</option></select>
+          <label id="rotComp">Comparar com <select id="selComp"></select></label>
+          <button id="btnLado" title="Ver o mês escolhido e o de comparação lado a lado">◫ Lado a lado</button>
+          <label id="wrapSync" class="chk-lin"><input type="checkbox" id="chkSync" checked> mover juntas</label>
+          <button id="btnRecolherLt" class="icone" title="Recolher ou abrir a linha do tempo">▾</button>
+        </div>
       </div>
-      <button id="btnPlay" class="sec" title="Ver a obra evoluindo mês a mês">▶ Evolução</button>
-      <div class="lt-comp">
-        <label id="rotComp">Comparar com <select id="selComp"></select></label>
-        <button id="btnLado" title="Ver o mês escolhido e o de comparação lado a lado">◫ Lado a lado</button>
-        <label id="wrapSync" class="chk-lin"><input type="checkbox" id="chkSync" checked> mover juntas</label>
-      </div>
+      <div id="ltMeses" class="lt-meses" role="listbox" aria-label="Meses da obra"></div>
+      <input id="rangeMes" type="range" min="0" max="0" step="1" aria-label="Mês" hidden>
     </div>
   </section>
 

@@ -5,7 +5,7 @@ import * as M from './model.js';
 import * as S from './store.js';
 import { Visualizador } from './scene.js';
 import { fmtMes, mesAtual, mesAnterior, mesDe } from './meses.js';
-import { $, $$, esc, toast, dialogo } from './util.js';
+import { $, $$, esc, toast, dialogo, num } from './util.js';
 import { renderArvore, ligarArvore, renderIndicadores, ligarIndicadores, renderLegenda } from './paineis.js';
 import { renderEditor, ligarEditor, moverPorArrasto } from './editor.js';
 import * as Modais from './modais.js';
@@ -385,15 +385,42 @@ function renderLinhaTempo() {
   $('#rotMes').innerHTML = `<b>${fmtMes(app.mes)}</b>${app.fora.includes(app.mes) ? ' <span class="aviso">fora do período</span>' : ''}`;
   $('#periodo').textContent = `${fmtMes(app.meses[0])} – ${fmtMes(app.meses[app.meses.length - 1])} · ${app.meses.length} meses`;
   $('#rotComp').style.display = app.modo === 'mudou' || app.ladoALado ? '' : 'none';
-  document.body.classList.toggle('com-linha-tempo', app.uso === 'acompanhar' || app.modo === 'mudou' || app.ladoALado);
+  document.body.classList.add('com-linha-tempo');
   const sc = $('#selComp');
   sc.innerHTML = app.meses.map((m) => `<option value="${m}" ${m === app.mesComp ? 'selected' : ''}>${fmtMes(m)}</option>`).join('');
   $('#btnPlay').textContent = app.tocando ? '⏸ Pausar' : '▶ Evolução';
   $('#btnPlay').title = app.tocando ? 'Pausar' : 'Reproduzir a evolução mês a mês';
-  // marcas de meses com lançamento
-  const usados = new Set(Object.keys(app.obra.lancamentos).map((k) => k.split('|')[2]));
-  const n = app.meses.length;
-  $('#marcasMes').innerHTML = app.meses.map((m, i) => `<i class="${usados.has(m) ? 'com' : ''} ${m === app.mes ? 'atual' : ''} ${m === app.mesComp ? 'comp' : ''}" style="left:${n <= 1 ? 0 : (i / (n - 1)) * 100}%" title="${fmtMes(m)}${usados.has(m) ? ' · com lançamentos' : ''}"></i>`).join('');
+  // faixa de meses: coluna com o acumulado, ponto nos meses com lançamento
+  const porMes = new Map();
+  for (const k of Object.keys(app.obra.lancamentos)) { const m = k.slice(k.lastIndexOf('|') + 1); porMes.set(m, (porMes.get(m) || 0) + 1); }
+  const todas = C.todasFolhas(app.idx);
+  const un = todas.filter((e) => e.classe === 'unidade');
+  const base = un.length ? un : todas;
+  const hoje = mesAtual();
+  const { meses: periodo } = { meses: new Set(C.mesesDaObra({ ...app.obra, lancamentos: {}, conclusoes: {} }).meses) };
+  let anterior = 0;
+  const ultimo = app.idx.ultimoMes || '';
+  const chips = app.meses.map((m, i) => {
+    const semDados = !ultimo || m > ultimo;
+    const v = semDados ? 0 : C.progConjunto(app.idx, base, m);
+    const d = semDados ? 0 : v - anterior;
+    anterior = v;
+    const ano = m.slice(0, 4);
+    const novoAno = i === 0 || app.meses[i - 1].slice(0, 4) !== ano;
+    const nL = porMes.get(m) || 0;
+    const cls = [m === app.mes ? 'atual' : '', m === app.mesComp && (app.modo === 'mudou' || app.ladoALado) ? 'comp' : '', nL ? 'com' : '', !periodo.has(m) ? 'fora' : '', m > hoje ? 'futuro' : '', m === hoje ? 'hoje' : '', semDados ? 'sem-dados' : ''].join(' ');
+    const dica = semDados ? `${fmtMes(m)} · ainda sem lançamentos` : `${fmtMes(m)} · ${num(v)}% acumulado (${un.length ? 'unidades' : 'obra'}) · ${d >= 0 ? '+' : ''}${num(d)} p.p. no mês · ${nL} lançamento(s)${!periodo.has(m) ? ' · fora do período da obra' : ''}`;
+    return `${novoAno ? `<span class="lt-ano">${ano}</span>` : ''}<button class="mes-chip ${cls}" data-mes="${m}" title="${dica}" aria-label="${dica}" role="option" aria-selected="${m === app.mes}">
+      <span class="mc-col"><span class="mc-bar" style="height:${Math.max(v > 0 ? 3 : 0, Math.min(100, v))}%"></span>${d > 0.05 ? `<span class="mc-inc" style="height:${Math.min(100, d)}%;bottom:${Math.max(0, Math.min(100, v) - Math.min(100, d))}%"></span>` : ''}</span>
+      <span class="mc-mes">${fmtMes(m).slice(0, 3)}</span>${nL ? '<i class="mc-pt"></i>' : ''}${m === hoje ? '<span class="mc-hoje">hoje</span>' : ''}</button>`;
+  }).join('');
+  const faixa = $('#ltMeses');
+  faixa.innerHTML = chips;
+  const atual = faixa.querySelector('.mes-chip.atual');
+  if (atual) {
+    const r = atual.offsetLeft - faixa.clientWidth / 2 + atual.clientWidth / 2;
+    if (Math.abs(faixa.scrollLeft - r) > faixa.clientWidth / 3) faixa.scrollLeft = r;
+  }
 }
 
 export function irParaMes(m) {
@@ -422,7 +449,7 @@ function alternarReproducao() {
     const i = app.meses.indexOf(app.mes);
     if (i >= app.meses.length - 1) { pararReproducao(); renderLinhaTempo(); return; }
     irParaMes(app.meses[i + 1]);
-  }, 900);
+  }, Number($('#selVel')?.value) || 900);
   renderLinhaTempo();
 }
 
@@ -495,6 +522,14 @@ function ligarInterface() {
     renderEditor();
   };
   $('#rangeMes').oninput = (ev) => irParaMes(app.meses[Number(ev.target.value)]);
+  $('#ltMeses').addEventListener('click', (ev) => {
+    const c = ev.target.closest('.mes-chip');
+    if (!c) return;
+    if (ev.shiftKey) { app.mesComp = c.dataset.mes; if (app.modo !== 'mudou' && !app.ladoALado) app.modo = 'mudou'; renderTudo(); return; }
+    irParaMes(c.dataset.mes);
+  });
+  $('#selVel').onchange = () => { if (app.tocando) { pararReproducao(); alternarReproducao(); } };
+  $('#btnRecolherLt').onclick = () => { document.body.classList.toggle('lt-recolhida'); $('#btnRecolherLt').textContent = document.body.classList.contains('lt-recolhida') ? '▴' : '▾'; requestAnimationFrame(() => { app.vA.redimensionar(); app.vB.redimensionar(); }); };
   $('#btnAnt').onclick = () => { const i = app.meses.indexOf(app.mes); if (i > 0) irParaMes(app.meses[i - 1]); };
   $('#btnProx').onclick = () => { const i = app.meses.indexOf(app.mes); if (i < app.meses.length - 1) irParaMes(app.meses[i + 1]); };
   $('#btnHoje').onclick = () => { if (app.meses.includes(mesAtual())) irParaMes(mesAtual()); else toast('O mês atual está fora do período da obra.'); };

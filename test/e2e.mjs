@@ -278,6 +278,7 @@ const alvo0 = await A(() => __app.vA.controls.target.toArray());
 const alvo1 = await A(() => __app.vA.controls.target.toArray());
 void dist0; void alvo0; void alvo1;
 await p.click('#btnGirar');
+await p.waitForTimeout(1200);
 const camG0 = await A(() => __app.vA.camera.position.toArray());
 const tgtG0 = await A(() => __app.vA.controls.target.toArray());
 await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
