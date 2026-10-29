@@ -43,7 +43,25 @@ export function tamanho(b) {
   return `${num(b / 1024 / 1024, 1)} MB`;
 }
 
-export function baixar(nome, blob) {
+// Oferece um arquivo ao usuário. Dentro do claude.ai usa a capacidade
+// "downloads" (o usuário confirma); fora dele, um link de download comum.
+// Retorna true quando o arquivo foi entregue.
+let downloadsP = null;
+export async function baixar(nome, blob) {
+  if (window.claude && typeof window.claude.use === 'function') {
+    if (!downloadsP) downloadsP = window.claude.use('downloads').catch(() => null);
+    const dl = await downloadsP;
+    if (dl) {
+      try {
+        await dl.save({ filename: nome, data: blob });
+        return true;
+      } catch (e) {
+        if (e && e.code === 'declined') toast('Download cancelado.', 'erro');
+        else toast(`Não foi possível salvar o arquivo (${e?.code || 'erro'}).`, 'erro');
+        return false;
+      }
+    }
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -52,6 +70,7 @@ export function baixar(nome, blob) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return true;
 }
 
 export function nomeArquivo(s) {

@@ -399,8 +399,9 @@ export async function modalDocumentos() {
           const arq = await S.lerArquivo(doc.arquivoId);
           if (!arq) return toast('Arquivo não encontrado neste navegador.', 'erro');
           const url = URL.createObjectURL(arq.blob);
-          const w = window.open(url, '_blank');
-          if (!w) baixar(doc.nome, arq.blob);
+          let w = null;
+          try { w = window.open(url, '_blank'); } catch { w = null; }
+          if (!w) await baixar(doc.nome, arq.blob);
           return;
         }
         if (a === 'ren') {
@@ -512,8 +513,9 @@ export async function pacoteObra(incluirDocs = true) {
 export async function exportarObra(incluirDocs = true) {
   const p = await pacoteObra(incluirDocs);
   const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
-  baixar(`${nomeArquivo(app.obra.nome)}_${stamp}.json`, new Blob([JSON.stringify(p)], { type: 'application/json' }));
-  toast('Cópia da obra exportada.');
+  const ok = await baixar(`${nomeArquivo(app.obra.nome)}_${stamp}.json`, new Blob([JSON.stringify(p)], { type: 'application/json' }));
+  if (ok) toast('Cópia da obra exportada.');
+  return ok;
 }
 
 export async function importarObra(arquivoDado) {
@@ -583,7 +585,10 @@ export async function limparObra() {
     },
   });
   if (!r) return;
-  if (r.backup) await exportarObra(true);
+  if (r.backup && !(await exportarObra(true))) {
+    toast('Limpeza cancelada: a cópia de segurança não foi salva.', 'erro');
+    return;
+  }
   mutar((o) => C.limparAvancos(o));
   app.finalPendente.clear();
   await salvarAgora();
@@ -638,8 +643,7 @@ export function montarAbas(obra, idx, mesRef) {
 
 export async function exportarXlsx() {
   const blob = gerarXlsx(montarAbas(app.obra, app.idx, app.mes));
-  baixar(`${nomeArquivo(app.obra.nome)}_conferencia_${app.mes}.xlsx`, blob);
-  toast('Planilha gerada.');
+  if (await baixar(`${nomeArquivo(app.obra.nome)}_conferencia_${app.mes}.xlsx`, blob)) toast('Planilha gerada.');
 }
 
 // ---------------------------------------------------------------- ajuda
