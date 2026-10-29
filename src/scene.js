@@ -825,7 +825,7 @@ export class Visualizador {
     this.sairCaminhada(false);
     const c = b.getCenter(new THREE.Vector3());
     const s = b.getSize(new THREE.Vector3());
-    const r = Math.max(s.x, s.z, 8);
+    const r = Math.max(s.x, s.z, 26);
     const dir = this.camera.position.clone().sub(this.controls.target).normalize();
     this.controls.target.copy(c);
     this.camera.position.copy(c).addScaledVector(dir, r * 1.8 + 10);

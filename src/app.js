@@ -310,7 +310,7 @@ export function selecionar(id, { aditivo = false, duplo = false, origem = 'cena'
   renderArvore();
   renderEditor();
   renderIndicadores();
-  if (!app.paineis.editor && app.selecao.length) $('.grupo-bt.paineis [data-alternar=editor]')?.classList.add('chamar');
+  if (app.selecao.length && !app.paineis.dir && app.uso !== 'acompanhar') { app.paineis.dir = true; aplicarPaineis(); }
   const n = $('#arvore .no.sel');
   if (n && origem === 'cena') n.scrollIntoView({ block: 'nearest' });
 }
@@ -369,7 +369,7 @@ function renderBarra() {
   const o = app.obra;
   const avisos = [];
   if (o.arquivada) avisos.push('<b>Obra arquivada.</b> Os dados continuam editáveis; desarquive em “Obras”.');
-  if (o.esquematico) avisos.push(`Modelo <b>esquemático</b>: posições e dimensões aproximadas, ajuste em “Posição e propriedades”.${o.config.observacao ? ' ' + esc(o.config.observacao) : ''}`);
+  if (o.esquematico) avisos.push(`Modelo <b>esquemático</b>: posições e dimensões aproximadas, ajuste em Configurar › Posição e cadastro.${o.config.observacao ? ' ' + esc(o.config.observacao) : ''}`);
   const pend = o.documentos.filter((d) => !d.arquivoId);
   if (pend.length) avisos.push(`${pend.length} documento(s) de referência pendente(s): <button class="link" data-acao="docs">anexar</button>`);
   $('#avisos').innerHTML = avisos.map((a) => `<span>${a}</span>`).join('');
@@ -385,6 +385,7 @@ function renderLinhaTempo() {
   $('#rotMes').innerHTML = `<b>${fmtMes(app.mes)}</b>${app.fora.includes(app.mes) ? ' <span class="aviso">fora do período</span>' : ''}`;
   $('#periodo').textContent = `${fmtMes(app.meses[0])} – ${fmtMes(app.meses[app.meses.length - 1])} · ${app.meses.length} meses`;
   $('#rotComp').style.display = app.modo === 'mudou' || app.ladoALado ? '' : 'none';
+  document.body.classList.toggle('com-linha-tempo', app.uso === 'acompanhar' || app.modo === 'mudou' || app.ladoALado);
   const sc = $('#selComp');
   sc.innerHTML = app.meses.map((m) => `<option value="${m}" ${m === app.mesComp ? 'selected' : ''}>${fmtMes(m)}</option>`).join('');
   $('#btnPlay').textContent = app.tocando ? '⏸ Pausar' : '▶ Evolução';
@@ -525,6 +526,7 @@ function ligarInterface() {
   $$('.lateral .fechar-painel').forEach((b) => { b.onclick = () => b.closest('.lateral').classList.remove('aberto'); });
 
   $$('[data-alternar]').forEach((b) => { b.onclick = () => alternarPainel(b.dataset.alternar); });
+  $$('[data-uso]').forEach((b) => { b.onclick = () => definirUso(b.dataset.uso); });
   $('#btnSairFoco').onclick = () => alternarPainel('foco');
   $('#btnExpandir').onclick = alternarTelaCheia;
   document.addEventListener('fullscreenchange', () => marcarTelaCheia(!!document.fullscreenElement));
@@ -537,6 +539,7 @@ function ligarInterface() {
     if ((ev.key === 'f' || ev.key === 'F') && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !document.querySelector('.dlg-fundo')) alternarPainel('foco');
   });
   aplicarPaineis();
+  definirUso(app.uso, { salvar: false, inicial: true });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') salvarAgora(); });
   window.addEventListener('beforeunload', () => { salvarAgora(); });
   window.addEventListener('keydown', (ev) => {
@@ -567,33 +570,31 @@ async function alternarTelaCheia() {
 
 // ---------------------------------------------------------------- painéis (abrir e fechar)
 
-const PAINEIS_PADRAO = { esq: true, dir: true, editor: true };
+const PAINEIS_PADRAO = { esq: true, dir: true };
 function lerPaineis() {
-  try { return { ...PAINEIS_PADRAO, ...JSON.parse(localStorage.getItem('obras3d:paineis') || '{}') }; } catch { return { ...PAINEIS_PADRAO }; }
+  try { const v = JSON.parse(localStorage.getItem('obras3d:paineis') || '{}'); return { esq: v.esq !== false, dir: v.dir !== false }; } catch { return { ...PAINEIS_PADRAO }; }
 }
 app.paineis = lerPaineis();
 
 function gaveta() {
-  // telas menores usam gavetas no lugar das colunas
-  return { esq: matchMedia('(max-width: 820px)').matches, dir: matchMedia('(max-width: 1180px)').matches };
+  // telas menores: a lista vira gaveta; o painel da direita desce para baixo da maquete no celular
+  return { esq: matchMedia('(max-width: 1180px)').matches, dir: matchMedia('(max-width: 820px)').matches };
 }
 
 export function alternarPainel(qual) {
   const p = app.paineis;
   if (qual === 'foco') {
-    const emFoco = !p.esq && !p.dir && !p.editor;
+    const emFoco = !p.esq && !p.dir;
     if (emFoco) Object.assign(p, p.antesFoco || PAINEIS_PADRAO, { antesFoco: null });
-    else Object.assign(p, { antesFoco: { esq: p.esq, dir: p.dir, editor: p.editor }, esq: false, dir: false, editor: false });
-  } else if ((qual === 'esq' || qual === 'dir') && gaveta()[qual]) {
-    const el = $(qual === 'esq' ? '#painelEsq' : '#painelDir');
-    const abrir = !el.classList.contains('aberto');
-    $$('.lateral').forEach((x) => x.classList.remove('aberto'));
-    el.classList.toggle('aberto', abrir);
+    else Object.assign(p, { antesFoco: { esq: p.esq, dir: p.dir }, esq: false, dir: false });
+  } else if (qual === 'esq' && gaveta().esq) {
+    const el = $('#painelEsq');
+    el.classList.toggle('aberto');
     return;
   } else {
     p[qual] = !p[qual];
   }
-  try { localStorage.setItem('obras3d:paineis', JSON.stringify({ esq: p.esq, dir: p.dir, editor: p.editor })); } catch { /* sem armazenamento */ }
+  try { localStorage.setItem('obras3d:paineis', JSON.stringify({ esq: p.esq, dir: p.dir })); } catch { /* sem armazenamento */ }
   aplicarPaineis();
 }
 
@@ -602,18 +603,31 @@ function aplicarPaineis() {
   const b = document.body.classList;
   b.toggle('sem-esq', !p.esq);
   b.toggle('sem-dir', !p.dir);
-  b.toggle('editor-recolhido', !p.editor);
-  b.toggle('foco', !p.esq && !p.dir && !p.editor);
-  $$('.grupo-bt.paineis [data-alternar]').forEach((x) => {
-    const k = x.dataset.alternar;
-    const fechado = k === 'foco' ? false : !p[k];
-    x.classList.toggle('fechado', fechado);
-    if (k === 'foco') x.classList.toggle('ativo', !p.esq && !p.dir && !p.editor);
-    x.setAttribute('aria-pressed', String(k === 'foco' ? (!p.esq && !p.dir && !p.editor) : p[k]));
-  });
-  const be = $('#btnRecolherEditor');
-  if (be) be.textContent = p.editor ? '▾' : '▴ Lançamento';
-  if (p.editor) $('.grupo-bt.paineis [data-alternar=editor]')?.classList.remove('chamar');
+  b.toggle('foco', !p.esq && !p.dir);
+  requestAnimationFrame(() => { app.vA?.redimensionar(); app.vB?.redimensionar(); });
+}
+
+// ---------------------------------------------------------------- o que fazer: lançar, acompanhar, configurar
+
+function lerUso() {
+  try { const u = localStorage.getItem('obras3d:uso'); return ['lancar', 'acompanhar', 'configurar'].includes(u) ? u : 'lancar'; } catch { return 'lancar'; }
+}
+app.uso = lerUso();
+
+export function definirUso(uso, { salvar = true, inicial = false } = {}) {
+  app.uso = uso;
+  if (salvar) { try { localStorage.setItem('obras3d:uso', uso); } catch { /* sem armazenamento */ } }
+  const b = document.body.classList;
+  for (const u of ['lancar', 'acompanhar', 'configurar']) b.toggle('uso-' + u, u === uso);
+  $$('[data-uso]').forEach((x) => { x.classList.toggle('ativo', x.dataset.uso === uso); x.setAttribute('aria-selected', String(x.dataset.uso === uso)); });
+  // o painel do elemento vai junto: lançamento ou cadastro
+  const ed = $('#editor');
+  const destino = uso === 'configurar' ? $('#slotConfig') : $('[data-secao=lancar]');
+  if (ed.parentElement !== destino) destino.appendChild(ed);
+  if (uso === 'configurar') app.abaEditor = 'props';
+  else if (app.abaEditor === 'props') app.abaEditor = 'avanco';
+  if (!inicial && !app.paineis.dir) { app.paineis.dir = true; aplicarPaineis(); }
+  if (app.obra) renderTudo({ cena: false });
   requestAnimationFrame(() => { app.vA?.redimensionar(); app.vB?.redimensionar(); });
 }
 

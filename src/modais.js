@@ -663,6 +663,7 @@ export function modalAjuda() {
     titulo: 'Como usar',
     largura: 760,
     html: `<div class="ajuda">
+      <h4>As três abas do topo</h4><p><b>✎ Lançar</b> para registrar o avanço do mês, <b>📊 Acompanhar</b> para indicadores e evolução, <b>⚙ Configurar</b> para obras, etapas, documentos e posição dos elementos.</p>
       <h4>1. Escolha a obra e o mês</h4><p>No topo, selecione a obra. Na linha do tempo, escolha a competência que vai receber o lançamento. Todo valor digitado vale para essa competência.</p>
       <h4>2. Selecione o que foi executado</h4><p>Clique numa casa, apartamento, área comum ou rua, na cena ou na lista. Dois cliques pegam o grupo (rank, pavimento). Em “Nível de seleção” você define se o clique pega a unidade ou o grupo. Shift + clique soma itens num conjunto.</p>
       <h4>3. Lance no painel de baixo</h4><p>Para um elemento: digite o realizado no mês, o acumulado atual ou arraste a barra. Acumulado anterior + realizado no mês = acumulado atual. Para um grupo: marque as etapas, informe o valor, veja quem será afetado e aplique.</p>

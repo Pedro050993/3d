@@ -41,7 +41,8 @@ async function selecionarPorBusca(nome) {
   await p.fill('#buscaElem', '');
   await p.dispatchEvent('#buscaElem', 'input');
 }
-const linha = (etapa) => p.locator('#editor tr[data-et]', { has: p.locator('td.et b', { hasText: new RegExp(`^${etapa}$`) }) });
+const linha = (etapa) => p.locator('#editor [data-et]', { has: p.locator('.et b', { hasText: new RegExp(`^${etapa}$`) }) });
+const uso = async (u) => { await p.click(`[data-uso=${u}]`); await p.waitForTimeout(150); };
 async function definirAcum(etapa, v) {
   const i = linha(etapa).locator('.in-acum');
   await i.fill(String(v));
@@ -97,7 +98,7 @@ ok((await p.textContent('#editor .nome-alvo')).includes('Casa 001'), 'painel mos
 await definirAcum('Alvenaria', 40);
 ok(await pctDe('Casa 001', 'Alvenaria', '2026-01') === 40, 'jan: acumulado 40%');
 await irMes('2026-02');
-const antFev = await linha('Alvenaria').locator('td.ant').textContent();
+const antFev = await linha('Alvenaria').locator('.ant').textContent();
 ok(antFev.includes('40,0%'), `fev mostra acumulado anterior 40% (${antFev.trim()})`);
 await definirReal('Alvenaria', 15);
 ok(await pctDe('Casa 001', 'Alvenaria', '2026-02') === 55, 'fev: 40% + 15 p.p. = 55%');
@@ -109,7 +110,7 @@ await definirAcum('Alvenaria', 55);
 await definirAcum('Alvenaria', 55);
 ok((await nLanc()) === antes && (await pctDe('Casa 001', 'Alvenaria', '2026-02')) === 55, 'salvar de novo não duplica');
 // barra editável diretamente
-await A(() => { const r = [...document.querySelectorAll('#editor tr[data-et]')].find((t) => t.querySelector('td.et b').textContent === 'Fundações').querySelector('.barra'); r.value = '70'; r.dispatchEvent(new Event('input', { bubbles: true })); r.dispatchEvent(new Event('change', { bubbles: true })); });
+await A(() => { const r = [...document.querySelectorAll('#editor [data-et]')].find((t) => t.querySelector('.et b').textContent === 'Fundações').querySelector('.barra'); r.value = '70'; r.dispatchEvent(new Event('input', { bubbles: true })); r.dispatchEvent(new Event('change', { bubbles: true })); });
 await p.waitForTimeout(150);
 ok(await pctDe('Casa 001', 'Fundações', '2026-02') === 70, 'barra da etapa edita o acumulado (Fundações 70%)');
 await foto('02-individual');
@@ -185,7 +186,7 @@ await selecionarPorBusca('Casa 144');
 await p.click('[data-acao=finalizar]');
 await p.click('.dlg .primario');
 await p.waitForTimeout(200);
-ok((await p.textContent('#editor .situacao')).includes('Finalizado'), 'finalização individual da Casa 144 em jun');
+ok((await p.textContent('#editor .resumo-elem')).includes('Finalizado'), 'finalização individual da Casa 144 em jun');
 await irMes('2026-05');
 await selecionarPorBusca('Rank 02');
 ok(/2 de 3/.test(await p.textContent('#editor .cont-fin')), 'em mai ainda são 2 de 3 (finalização de jun não retroage)');
@@ -195,7 +196,7 @@ await foto('04-finalizacao');
 passo('Áreas comuns e infraestrutura');
 await irMes('2026-04');
 await selecionarPorBusca('Piscinas');
-const etapasPiscina = await p.locator('#editor tr[data-et] td.et b').allTextContents();
+const etapasPiscina = await p.locator('#editor [data-et] .et b').allTextContents();
 ok(!etapasPiscina.includes('Cobertura') && etapasPiscina.includes('Impermeabilização'), 'piscina com etapas próprias');
 await definirAcum('Estrutura', 100);
 await definirAcum('Fundações', 100);
@@ -206,7 +207,7 @@ await p.click('.dlg .primario');
 await p.waitForTimeout(150);
 ok((await p.textContent('.card.ac')).includes('1 de 14'), 'piscina finalizada contada nas áreas comuns');
 await selecionarPorBusca('Estacionamento e circulação central');
-const unid = await linha('Pavimentação').locator('td').nth(1).textContent();
+const unid = await linha('Pavimentação').locator('.ec-qtd').textContent();
 ok(/m²/.test(unid), `pavimentação por quantidade (${unid.trim()})`);
 const totPav = await A(() => { const e = __app.obra.elementos.find((x) => x.nome === 'Estacionamento e circulação central'); const et = __app.obra.etapas.find((x) => x.nome === 'Pavimentação'); return e.quantidades[et.id]; });
 await definirReal('Pavimentação', Math.round(totPav / 4));
@@ -227,10 +228,11 @@ await p.selectOption('#selEtapa', { label: 'Cobertura' });
 await p.waitForTimeout(150);
 ok(await A(() => __app.modo === 'etapa' && __app.obra.etapas.find((e) => e.id === __app.etapaFiltro).nome === 'Cobertura'), 'filtro por etapa ativo');
 await selecionarPorBusca('Casa 143');
-const ets = await p.locator('#editor tr[data-et] td.et b').allTextContents();
+const ets = await p.locator('#editor [data-et] .et b').allTextContents();
 ok(ets.length === 1 && ets[0] === 'Cobertura', 'painel edita só a etapa filtrada');
 await p.selectOption('#selEtapa', 'todas');
 await p.click('[data-modo=maquete]');
+await uso('acompanhar');
 await p.click('#btnLado');
 await p.waitForTimeout(300);
 ok(await A(() => !document.querySelector('#cenaB').classList.contains('oculto')), 'duas cenas lado a lado');
@@ -244,6 +246,7 @@ await p.waitForTimeout(2000);
 const m1 = await A(() => __app.mes);
 await p.click('#btnPlay');
 ok(m1 > m0, `reprodução automática avança os meses (${m0} → ${m1})`);
+await uso('lancar');
 
 // ------------------------------------------------------------------
 passo('Navegação 3D: mouse, seleção na cena, primeira pessoa');
@@ -343,6 +346,7 @@ ok(await pctDe('Casa 001', 'Alvenaria', '2026-02') === 45, 'acumulado de fev con
 // ------------------------------------------------------------------
 passo('Nova obra e independência dos dados');
 const vfId = snap.id;
+await uso('configurar');
 await p.click('#btnObras');
 await p.click('[data-o=nova]');
 await p.fill('#nNome', 'Edifício Teste');
@@ -353,6 +357,7 @@ await p.waitForFunction(() => __app.obra.nome === 'Edifício Teste');
 const ed = await A(() => ({ n: Object.keys(__app.obra.lancamentos).length, aptos: __app.obra.elementos.filter((e) => e.categoria === 'apartamento').length, tipo: __app.obra.tipo }));
 ok(ed.n === 0 && ed.aptos === 16 && ed.tipo === 'edificio', `edifício criado zerado com ${ed.aptos} aptos`);
 await irMes(await A(() => __app.meses[1]));
+await uso('lancar');
 await selecionarPorBusca('Apto 101 TA');
 await definirAcum('Estrutura', 60);
 const edLanc = await nLanc();
@@ -365,6 +370,7 @@ ok(await pctDe('Casa 001', 'Alvenaria', '2026-02') === 45, 'valores do Villa Flo
 
 // ------------------------------------------------------------------
 passo('Duplicação com e sem avanços');
+await uso('configurar');
 await p.click('#btnObras');
 await p.locator('tr', { hasText: 'Villa Flora II' }).first().locator('[data-o=duplicar]').click();
 await p.fill('#dNome', 'VF cópia estrutura');
@@ -380,6 +386,7 @@ await p.check('#dAv');
 await p.click('.dlg .primario');
 await p.waitForFunction(() => __app.obra.nome === 'VF cópia completa');
 ok((await nLanc()) === snap.n && (await pctDe('Casa 001', 'Alvenaria', '2026-02')) === 45, 'cópia com avanços traz os lançamentos');
+await uso('configurar');
 
 // ------------------------------------------------------------------
 passo('Exportar, planilha, importar');
@@ -434,20 +441,18 @@ await p.click('.dlg .primario');
 
 // ------------------------------------------------------------------
 passo('Estrutura configurável pela interface');
+await uso('configurar');
 await selecionarPorBusca('Trecho 01');
-await p.click('[data-aba=props]');
 await p.click('[data-acao=addRank]');
 await p.waitForTimeout(200);
 const novoRank = await A(() => { const r = __app.obra.elementos.filter((e) => e.categoria === 'rank').pop(); return { nome: r.nome, n: __app.obra.elementos.filter((e) => e.paiId === r.id).length }; });
 ok(novoRank.n === 3, `novo rank com casas por rank da obra (${novoRank.nome}, ${novoRank.n} casas)`);
-await p.click('[data-aba=props]');
 const nomeInp = p.locator('#editor input[data-prop=nome]');
 await nomeInp.fill('Rank 67 (teste)');
 await nomeInp.press('Enter');
 await p.waitForTimeout(150);
 ok(await A(() => __app.obra.elementos.some((e) => e.nome === 'Rank 67 (teste)')), 'renomear grupo');
 await selecionarPorBusca('Casa 001');
-await p.click('[data-aba=props]');
 const [x0, r0] = await A(() => { const e = __app.obra.elementos.find((x) => x.nome === 'Casa 001'); return [e.x, e.rot]; });
 await p.click('[data-nudge="x:1"]');
 await p.click('[data-nudge="rot:15"]');
@@ -463,37 +468,33 @@ ok(await A(() => __app.obra.etapas.some((e) => e.nome === 'Nova etapa' && e.grup
 
 // ------------------------------------------------------------------
 passo('Painéis que abrem e fecham (foco na maquete)');
+await uso('lancar');
 const largura0 = await p.locator('#cenaA').evaluate((e) => e.clientWidth);
-await p.click('.grupo-bt.paineis [data-alternar=esq]');
+await p.click('#painelEsq .recolher');
 await p.waitForTimeout(200);
-ok(await A(() => getComputedStyle(document.querySelector('#painelEsq')).display === 'none'), 'lista de elementos fecha');
-await p.click('.grupo-bt.paineis [data-alternar=dir]');
-await p.click('.grupo-bt.paineis [data-alternar=editor]');
+ok(await A(() => getComputedStyle(document.querySelector('#painelEsq')).display === 'none'), 'lista fecha');
+await p.click('[data-secao=lancar] .recolher');
 await p.waitForTimeout(300);
 const largura1 = await p.locator('#cenaA').evaluate((e) => e.clientWidth);
-const altura1 = await p.locator('#cenaA').evaluate((e) => e.clientHeight);
 ok(largura1 > largura0 + 400, `maquete ganha espaço (${largura0} → ${largura1} px de largura)`);
-ok(await A(() => document.body.classList.contains('foco')), 'com os três fechados entra em foco');
-ok(await A(() => ['esq', 'dir', 'baixo'].every((k) => getComputedStyle(document.querySelector('.aba-borda.' + k)).display !== 'none')), 'cada painel fechado mostra uma alça para reabrir');
-await p.click('.aba-borda.baixo');
-await p.waitForTimeout(200);
-ok(await A(() => getComputedStyle(document.querySelector('#editor')).display !== 'none' && getComputedStyle(document.querySelector('.aba-borda.baixo')).display === 'none'), 'alça reabre o painel de lançamento');
-await p.click('.aba-borda.baixo').catch(() => {});
-await p.click('.grupo-bt.paineis [data-alternar=editor]');
-await p.waitForTimeout(200);
+ok(await A(() => document.body.classList.contains('foco')), 'com os dois painéis fechados entra em foco');
+ok(await A(() => ['esq', 'dir'].every((k) => getComputedStyle(document.querySelector('.aba-borda.' + k)).display !== 'none')), 'cada painel fechado mostra uma alça para reabrir');
 await foto('13-foco-maquete');
 await p.reload();
 await pronto();
-ok(await A(() => document.body.classList.contains('sem-esq') && document.body.classList.contains('editor-recolhido')), 'escolha dos painéis lembrada ao reabrir');
-await p.click('#btnSairFoco');
-await p.waitForTimeout(300);
-ok(await A(() => !document.body.classList.contains('foco') && getComputedStyle(document.querySelector('#painelEsq')).display !== 'none' && getComputedStyle(document.querySelector('#editor')).display !== 'none'), 'botão “Mostrar painéis” reabre tudo');
+ok(await A(() => document.body.classList.contains('sem-esq') && document.body.classList.contains('sem-dir')), 'escolha dos painéis lembrada ao reabrir');
+await p.click('.aba-borda.dir');
+await p.waitForTimeout(200);
+ok(await A(() => getComputedStyle(document.querySelector('#painelDir')).display !== 'none'), 'alça reabre o painel da direita');
+await p.click('.aba-borda.esq');
+await p.waitForTimeout(200);
+ok(await A(() => !document.body.classList.contains('foco') && getComputedStyle(document.querySelector('#painelEsq')).display !== 'none'), 'alça reabre a lista');
 await p.keyboard.press('f');
 await p.waitForTimeout(200);
 ok(await A(() => document.body.classList.contains('foco')), 'tecla F alterna o foco');
-await p.keyboard.press('f');
-const altura2 = await p.locator('#cenaA').evaluate((e) => e.clientHeight);
-ok(altura1 > altura2, `fechar o lançamento aumenta a altura da maquete (${altura2} → ${altura1} px)`);
+await p.click('#btnSairFoco');
+await p.waitForTimeout(200);
+ok(await A(() => !document.body.classList.contains('foco')), 'botão “Mostrar painéis” reabre tudo');
 
 // ------------------------------------------------------------------
 passo('Maquete em tela cheia');

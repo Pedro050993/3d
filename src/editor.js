@@ -28,11 +28,15 @@ export function renderEditor() {
   const el = $('#editor');
   if (!el || !app.idx) return;
   const a = alvoAtual();
+  if (!a && app.uso === 'configurar') {
+    el.innerHTML = '<p class="dica">Toque numa casa, rank ou área na maquete (ou na lista) para ajustar posição, nome, dimensões e etapas.</p>';
+    return;
+  }
   if (!a) {
     el.innerHTML = `<div class="ed-vazio">
       <div class="passos">
-        <div class="passo feito"><span class="num">1</span><div><b>Mês do lançamento</b><span>${fmtMes(app.mes)} · troque nas setas ‹ › logo acima</span></div></div>
-        <div class="passo atual"><span class="num">2</span><div><b>Escolha o que foi feito</b><span>Toque numa casa na maquete ou na lista. Dois toques pegam o rank inteiro.</span></div></div>
+        <div class="passo feito"><span class="num">1</span><div><b>Mês do lançamento</b><span><b>${fmtMes(app.mes)}</b> · troque nas setas ‹ › no topo</span></div></div>
+        <div class="passo atual"><span class="num">2</span><div><b>Escolha o que foi feito</b><span>Toque numa casa na maquete ou busque na lista. Dois toques pegam o rank inteiro.</span></div></div>
         <div class="passo"><span class="num">3</span><div><b>Informe quanto andou</b><span>Use +5, +10 ou 100% em cada etapa, ou digite. Grava sozinho.</span></div></div>
       </div></div>`;
     return;
@@ -64,31 +68,34 @@ function htmlFolha(e) {
   const s = C.statusElem(idx, e, mes);
   const fis = C.progElem(idx, e, mes);
   const conc = C.situacaoConclusao(app.obra, e.id, mes);
-  const aba = ['avanco', 'historico', ...(ehAdmin() ? ['props'] : [])].includes(app.abaEditor) ? app.abaEditor : 'avanco';
+  const config = app.uso === 'configurar';
+  const abas = config ? ['props'] : ['avanco', 'historico'];
+  const aba = abas.includes(app.abaEditor) ? app.abaEditor : abas[0];
   return `<div class="ed-topo">
-      <div class="alvo"><span class="rot">Lançamento em</span><b class="nome-alvo">${esc(e.nome)}</b>
-        <span class="cam">${esc(caminho(e.id))}${e.categoria ? ` · ${esc(rotCategoria(e.categoria))}` : ''}${e.tipologia ? ` · ${esc(e.tipologia)}` : ''}</span>
-        <span class="comp">Competência <b>${fmtMes(mes)}</b></span></div>
-      <div class="situacao">${chipStatus(s)}<span class="fis">Físico ${pct(fis)}</span>
-        ${conc ? `<button data-acao="reabrir" class="sec">Reabrir</button>${conc === 'finalizado' ? '<button data-acao="entregar" class="sec">Marcar entregue</button>' : ''}`
-    : `<button data-acao="finalizar" class="ok">✓ Finalizar em ${fmtMes(mes)}</button>`}
-        <button data-acao="selPai" class="sec" title="Selecionar o grupo deste elemento">⬆ Grupo</button>
-      </div>
+      <div class="alvo"><span class="rot">${config ? 'Cadastro de' : 'Lançando em'}</span><b class="nome-alvo">${esc(e.nome)}</b>
+        <span class="cam">${esc(caminho(e.id))}${e.tipologia ? ` · ${esc(e.tipologia)}` : ''}</span></div>
+      ${config ? '' : `<div class="resumo-elem">
+        <div class="anel" style="--p:${Math.min(100, fis)}"><b>${num(fis, 0)}%</b><span>pronto</span></div>
+        <div class="resumo-txt">${chipStatus(s)}<span class="comp">em <b>${fmtMes(mes)}</b></span></div>
+        <div class="resumo-acoes">${conc ? `<button data-acao="reabrir" class="sec">Reabrir</button>${conc === 'finalizado' ? '<button data-acao="entregar" class="sec">Marcar entregue</button>' : ''}`
+    : `<button data-acao="finalizar" class="ok">✓ Finalizar</button>`}
+          <button data-acao="selPai" class="sec" title="Lançar no grupo deste elemento (rank, pavimento)">⬆ Rank inteiro</button></div>
+      </div>`}
     </div>
-    <div class="abas" role="tablist">
-      <button class="${aba === 'avanco' ? 'ativa' : ''}" data-aba="avanco">Lançar avanço</button>
+    ${config ? '' : `<div class="abas" role="tablist">
+      <button class="${aba === 'avanco' ? 'ativa' : ''}" data-aba="avanco">Etapas</button>
       <button class="${aba === 'historico' ? 'ativa' : ''}" data-aba="historico">Histórico</button>
-      <button class="${aba === 'props' ? 'ativa' : ''}" data-aba="props">Posição e cadastro</button>
-    </div>
+    </div>`}
     <div class="ed-corpo">${aba === 'avanco' ? tabelaFolha(e) : aba === 'historico' ? historicoFolha(e) : propsElem(e)}</div>`;
 }
 
+// Uma etapa por cartão: número grande, barra para arrastar e botões rápidos.
 function tabelaFolha(e) {
   const { idx, mes } = app;
   const ant = mesAnterior(mes);
   const ets = etapasVisiveis(C.etapasDoElem(idx, e));
-  if (!ets.length) return '<p class="vazio">Nenhuma etapa se aplica a este elemento. Cadastre etapas do grupo correspondente em “Etapas” ou revise as etapas aplicáveis em “Posição e propriedades”.</p>';
-  const linhas = ets.map((et) => {
+  if (!ets.length) return '<p class="vazio">Nenhuma etapa se aplica a este elemento. Peça ao administrador para revisar as etapas em Configurar.</p>';
+  const cartoes = ets.map((et) => {
     const tot = C.total(e, et);
     const aAnt = C.acumulado(idx, e.id, et.id, ant);
     const real = C.realizado(idx, e.id, et.id, mes);
@@ -97,23 +104,26 @@ function tabelaFolha(e) {
     const pAt = (aAt / tot) * 100;
     const qtd = et.unidade !== '%';
     const temLanc = !!app.obra.lancamentos[C.chave(e.id, et.id, mes)];
-    return `<tr data-et="${et.id}">
-      <td class="et"><b>${esc(et.nome)}</b><small>peso ${num(et.peso, 0)}</small></td>
-      <td class="n">${qtd ? `${num(tot, 0)} ${esc(et.unidade)}` : '100%'}</td>
-      <td class="n ant">${pct(pAnt)}${qtd ? `<small>${num(aAnt, 1)} ${esc(et.unidade)}</small>` : ''}</td>
-      <td class="n"><span class="mais">+</span><input class="in-real" inputmode="decimal" value="${num(qtd ? real : (real / tot) * 100, qtd ? 2 : 1)}" aria-label="Realizado no mês ${esc(et.nome)}"><small>${qtd ? esc(et.unidade) : 'p.p.'}</small></td>
-      <td class="barra-cel"><input type="range" class="barra" min="0" max="100" step="0.5" value="${pAt}" style="--ant:${pAnt}%;--atu:${pAt}%" aria-label="Acumulado atual ${esc(et.nome)}"></td>
-      <td class="n"><span class="igual">=</span><input class="in-acum" inputmode="decimal" value="${num(pAt, 1)}" aria-label="Acumulado atual % ${esc(et.nome)}"><small>%</small>${qtd ? `<small class="q">${num(aAt, 1)} ${esc(et.unidade)}</small>` : ''}</td>
-      <td class="rapidos">${temLanc ? '<span title="Já tem lançamento neste mês" class="pt">●</span>' : ''}<button data-rap="5" title="Somar 5 pontos no mês">+5</button><button data-rap="10" title="Somar 10 pontos no mês">+10</button><button data-rap="100" class="${pAt >= 99.99 ? 'feito' : ''}" title="Etapa concluída">100%</button></td>
-    </tr>`;
+    return `<div class="etapa-card ${pAt >= 99.99 ? 'completa' : pAt > 0 ? 'andando' : ''}" data-et="${et.id}">
+      <div class="ec-topo">
+        <span class="et"><b>${esc(et.nome)}</b>${temLanc ? '<span class="pt" title="Já tem lançamento neste mês">● lançado no mês</span>' : ''}</span>
+        <label class="ec-pct"><input class="in-acum" inputmode="decimal" value="${num(pAt, 1)}" aria-label="Total agora em % ${esc(et.nome)}"><span>%</span></label>
+      </div>
+      <input type="range" class="barra" min="0" max="100" step="0.5" value="${pAt}" style="--ant:${pAnt}%;--atu:${pAt}%" aria-label="Total agora ${esc(et.nome)}">
+      <div class="ec-rodape">
+        <div class="ec-info"><span class="ant">Até ${fmtMes(ant)}: ${pct(pAnt)}</span>
+        <label class="ec-mes">no mês <span class="mais">+</span><input class="in-real" inputmode="decimal" value="${num(qtd ? real : (real / tot) * 100, qtd ? 2 : 1)}" aria-label="Feito no mês ${esc(et.nome)}"><small>${qtd ? esc(et.unidade) : 'pts'}</small></label></div>
+        <span class="rapidos"><button data-rap="5" title="Somar 5 pontos no mês">+5</button><button data-rap="10" title="Somar 10 pontos no mês">+10</button><button data-rap="100" class="${pAt >= 99.99 ? 'feito' : ''}" title="Etapa concluída">100%</button></span>
+      </div>
+      ${qtd ? `<div class="ec-qtd">${num(aAt, 1)} de ${num(tot, 0)} ${esc(et.unidade)}</div>` : ''}
+    </div>`;
   }).join('');
-  return `<div class="tab-wrap"><table class="tab-lanc">
-    <thead><tr><th>Etapa</th><th>Quantidade</th><th>Até ${fmtMes(ant)}</th><th>Feito em ${fmtMes(mes)}</th><th>Arraste a barra</th><th>Total agora</th><th>Rápido</th></tr></thead>
-    <tbody>${linhas}</tbody></table></div>
-    <div class="ed-acoes"><span class="formula">Até o mês anterior + feito no mês = total agora · avanço da ${esc(rotCategoria(e.categoria).toLowerCase() || 'unidade')}: <b>${pct(C.progElem(app.idx, e, mes))}</b></span>
-      ${app.modo === 'etapa' && app.etapaFiltro !== 'todas' ? '<span class="aviso">Filtro de etapa ativo</span>' : ''}
+  return `<div class="etapas-cards">${cartoes}</div>
+    <div class="ed-acoes">
+      ${app.modo === 'etapa' && app.etapaFiltro !== 'todas' ? '<span class="aviso">Mostrando só uma etapa</span>' : ''}
       <button class="sec" data-acao="tudo100">✓ Tudo 100%</button>
-      <button class="sec" data-acao="zerarMes">Limpar lançamentos deste mês</button></div>`;
+      <button class="sec" data-acao="zerarMes">Desfazer lançamentos deste mês</button></div>
+    <p class="dica formula">Total agora = até o mês anterior + o que foi feito neste mês. Grava sozinho ao soltar a barra ou sair do campo.</p>`;
 }
 
 function historicoFolha(e) {
@@ -206,24 +216,32 @@ function htmlGrupo(a) {
   const p = C.progConjunto(idx, a.folhas, mes);
   const pAnt = C.progConjunto(idx, a.folhas, mesAnterior(mes));
   const nomeUn = nomeUnidades(a.folhas);
-  const aba = ['coletivo', 'final', 'elems', ...(ehAdmin() ? ['props'] : [])].includes(app.abaEditor) ? app.abaEditor : 'coletivo';
+  const abasG = app.uso === 'configurar' ? ['props'] : ['coletivo', 'final', 'elems'];
+  const aba = abasG.includes(app.abaEditor) ? app.abaEditor : abasG[0];
   const titulo = a.grupo ? esc(a.grupo.nome) : `Conjunto de ${a.els.length} seleções`;
+  const config = app.uso === 'configurar';
+  if (config) {
+    return `<div class="ed-topo"><div class="alvo"><span class="rot">Cadastro de</span><b class="nome-alvo">${titulo}</b>
+        <span class="cam">${a.grupo ? esc(caminho(a.grupo.id)) : ''} ${n} ${nomeUn}</span></div></div>
+      <div class="ed-corpo">${a.grupo ? propsElem(a.grupo) : '<p class="dica">Selecione um único grupo para editar a estrutura.</p>'}</div>`;
+  }
   return `<div class="ed-topo">
       <div class="alvo"><span class="rot">Lançamento coletivo em</span><b class="nome-alvo">${titulo}</b>
-        <span class="cam">${a.grupo ? esc(caminho(a.grupo.id)) : ''} ${n} ${nomeUn}</span>
-        <span class="comp">Competência <b>${fmtMes(mes)}</b></span></div>
-      <div class="situacao"><span class="cont-fin"><b>${nf} de ${n}</b> ${nomeUn} finalizad${nomeUn.endsWith('as') ? 'as' : 'os'} ${a.grupo ? `neste ${esc(rotCategoria(a.grupo.categoria).toLowerCase() || 'grupo')}` : 'no conjunto'}</span>
-        <span class="fis">Físico ${pct(p)} (${pp(p - pAnt)} no mês)</span>
-        ${a.grupo && a.grupo.paiId ? '<button data-acao="selPai" class="sec">⬆ Grupo acima</button>' : ''}
-        ${app.selecao.length > 1 ? '<button data-acao="limparSel" class="sec">Limpar seleção</button>' : ''}</div>
+        <span class="cam">${a.grupo ? esc(caminho(a.grupo.id)) : ''} · ${n} ${nomeUn}</span></div>
+      <div class="resumo-elem">
+        <div class="anel" style="--p:${Math.min(100, p)}"><b>${num(p, 0)}%</b><span>pronto</span></div>
+        <div class="resumo-txt"><span class="cont-fin"><b>${nf} de ${n}</b> ${nomeUn} finalizad${nomeUn.endsWith('as') ? 'as' : 'os'} ${a.grupo ? `neste ${esc(rotCategoria(a.grupo.categoria).toLowerCase() || 'grupo')}` : 'no conjunto'}</span>
+          <span class="comp">${pp(p - pAnt)} em <b>${fmtMes(mes)}</b></span></div>
+        <div class="resumo-acoes">${a.grupo && a.grupo.paiId ? '<button data-acao="selPai" class="sec">⬆ Grupo acima</button>' : ''}
+          ${app.selecao.length > 1 ? '<button data-acao="limparSel" class="sec">Limpar seleção</button>' : ''}</div>
+      </div>
     </div>
     <div class="abas" role="tablist">
-      <button class="${aba === 'coletivo' ? 'ativa' : ''}" data-aba="coletivo">Lançar no grupo todo</button>
-      <button class="${aba === 'final' ? 'ativa' : ''}" data-aba="final">Finalização (${nf}/${n})</button>
-      <button class="${aba === 'elems' ? 'ativa' : ''}" data-aba="elems">Ver cada um (${n})</button>
-      ${a.grupo ? `<button class="${aba === 'props' ? 'ativa' : ''}" data-aba="props">Estrutura e cadastro</button>` : ''}
+      <button class="${aba === 'coletivo' ? 'ativa' : ''}" data-aba="coletivo">Lançar em todos</button>
+      <button class="${aba === 'final' ? 'ativa' : ''}" data-aba="final">Finalizar (${nf}/${n})</button>
+      <button class="${aba === 'elems' ? 'ativa' : ''}" data-aba="elems">Cada um (${n})</button>
     </div>
-    <div class="ed-corpo">${aba === 'coletivo' ? coletivo(a) : aba === 'final' ? finalizacao(a) : aba === 'elems' ? matriz(a) : propsElem(a.grupo)}</div>`;
+    <div class="ed-corpo">${aba === 'coletivo' ? coletivo(a) : aba === 'final' ? finalizacao(a) : matriz(a)}</div>`;
 }
 
 function nomeUnidades(folhas) {
@@ -388,11 +406,11 @@ function atualizarAoVivo(tr) {
 export function ligarEditor() {
   const el = $('#editor');
   el.addEventListener('input', (ev) => {
-    if (ev.target.classList.contains('barra')) atualizarAoVivo(ev.target.closest('tr'));
+    if (ev.target.classList.contains('barra')) atualizarAoVivo(ev.target.closest('[data-et]'));
   });
   el.addEventListener('change', async (ev) => {
     const t = ev.target;
-    const tr = t.closest('tr[data-et]');
+    const tr = t.closest('[data-et]');
     if (tr && t.classList.contains('barra')) return salvarLinha(tr, 'barra');
     if (tr && t.classList.contains('in-real')) return salvarLinha(tr, 'real');
     if (tr && t.classList.contains('in-acum')) return salvarLinha(tr, 'acum');
@@ -435,7 +453,7 @@ export function ligarEditor() {
       return irParaMes(b.dataset.ir);
     }
     if (b.dataset.rap) {
-      const tr = b.closest('tr[data-et]');
+      const tr = b.closest('[data-et]');
       const atual = lerNum(tr.querySelector('.in-acum').value) || 0;
       const r = Number(b.dataset.rap);
       tr.querySelector('.in-acum').value = num(r === 100 ? 100 : Math.min(100, atual + r), 1);

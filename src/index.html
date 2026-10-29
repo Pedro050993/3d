@@ -16,37 +16,29 @@
   <div class="obra-sel">
     <label for="selObra" class="sr">Obra</label>
     <select id="selObra" title="Obra aberta"></select>
-    <button id="btnEditarObra" class="icone" title="Editar dados e datas da obra">✎</button>
   </div>
-  <nav class="menu">
-    <button id="btnObras" title="Criar, duplicar, arquivar e abrir obras">Obras</button>
-    <button id="btnEtapas" title="Etapas, unidades e pesos">Etapas</button>
-    <button id="btnDocs" title="Plantas e documentos">Documentos</button>
-    <button id="btnDados" title="Exportar, importar, planilha e limpeza">Exportar</button>
-    <button id="btnAjuda" title="Como usar">Ajuda</button>
+  <nav class="usos" role="tablist" aria-label="O que você quer fazer">
+    <button data-uso="lancar" role="tab" title="Lançar o avanço do mês"><span class="ic">✎</span> Lançar</button>
+    <button data-uso="acompanhar" role="tab" title="Indicadores, evolução e comparação"><span class="ic">📊</span> Acompanhar</button>
+    <button data-uso="configurar" role="tab" title="Obras, etapas, documentos e posição dos elementos"><span class="ic">⚙</span> Configurar</button>
   </nav>
-  <div class="topo-paineis"><span class="rot-topo">Mostrar</span>
-    <div class="seg grupo-bt paineis" role="group" aria-label="Painéis">
-      <button data-alternar="esq" title="Mostrar ou esconder a lista de casas, ranks e áreas">◧ Lista</button>
-      <button data-alternar="dir" title="Mostrar ou esconder os indicadores">◨ Indicadores</button>
-      <button data-alternar="editor" title="Mostrar ou esconder o painel de lançamento">⬓ Lançamento</button>
-      <button data-alternar="foco" title="Só a maquete na tela (tecla F)">⛶ Foco</button>
-    </div>
+  <div class="mes-topo" aria-label="Mês">
+    <button id="btnAnt" class="seta" title="Mês anterior" aria-label="Mês anterior">‹</button>
+    <div class="mes-box"><span class="rot-topo">Mês</span><span id="rotMes" class="rot-mes"></span></div>
+    <button id="btnProx" class="seta" title="Próximo mês" aria-label="Próximo mês">›</button>
+    <button id="btnHoje" class="hoje" title="Ir para o mês atual">Hoje</button>
   </div>
   <span id="usuario" class="usuario oculto"></span>
   <span id="statusSalvo" class="salvo">…</span>
-  <div class="moveis">
-    <button data-painel="#painelEsq">☰ Elementos</button>
-    <button data-painel="#painelDir">📊 Indicadores</button>
-  </div>
+  <button id="btnAjuda" class="ajuda-bt" title="Como usar" aria-label="Ajuda">?</button>
+  <div class="moveis"><button data-painel="#painelEsq">☰ Lista</button></div>
 </header>
-<div id="avisos" class="avisos"></div>
 
 <main class="corpo">
   <aside id="painelEsq" class="lateral esq">
-    <div class="lat-topo"><h2>Elementos da obra</h2><button class="icone recolher" data-alternar="esq" title="Fechar a lista">«</button><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
+    <div class="lat-topo"><h2>Casas, ranks e áreas</h2><button class="icone recolher" data-alternar="esq" title="Esconder a lista">«</button><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
     <div class="filtros">
-      <input id="buscaElem" type="search" placeholder="Buscar casa, rank, área…">
+      <input id="buscaElem" type="search" placeholder="Buscar: casa 145, rank 01, piscina…">
       <select id="filtroStatus" title="Filtrar por situação no mês">
         <option value="">Todas as situações</option>
         <option value="nao_iniciado">Não iniciado</option>
@@ -62,48 +54,39 @@
 
   <section class="centro">
     <div class="barra3d">
-      <div class="bloco-barra">
-        <span class="rot-barra">Ver</span>
-        <div class="seg" role="group" aria-label="Como ver a obra">
-          <button data-modo="maquete" title="A obra como está construída no mês">Maquete</button>
-          <button data-modo="avanco" title="Cores por situação: não iniciado, em execução, concluído, finalizado">Cores do avanço</button>
-          <button data-modo="mudou" title="O que avançou entre dois meses">O que mudou</button>
-          <span id="wrapEtapa" class="wrap-etapa"><button data-modo="etapa" title="Ver e lançar uma etapa só">Uma etapa</button><select id="selEtapa" title="Escolha a etapa"></select></span>
+      <div class="seg" role="group" aria-label="Como ver a obra">
+        <button data-modo="maquete" title="A obra como está construída no mês">Maquete</button>
+        <button data-modo="avanco" title="Cores por situação: não iniciado, em execução, concluído, finalizado">Cores do avanço</button>
+        <button data-modo="mudou" title="O que avançou entre dois meses">O que mudou</button>
+        <span id="wrapEtapa" class="wrap-etapa"><button data-modo="etapa" title="Ver e lançar uma etapa só">Uma etapa</button><select id="selEtapa" title="Escolha a etapa"></select></span>
+      </div>
+      <div class="seg" role="group" aria-label="Câmera">
+        <button id="btnGeral" title="Ver a obra inteira">⌂ Geral</button>
+        <button id="btnTopo" title="Ver de cima, como na planta">⊤ De cima</button>
+        <button id="btnFp" title="Andar pela obra como se estivesse lá">🚶 Caminhar</button>
+        <button id="btnPersonagem" title="Escolher na maquete o ponto onde a caminhada começa">📍</button>
+      </div>
+      <details class="mais">
+        <summary title="Mais opções de visualização">⚙ Opções</summary>
+        <div class="pop">
+          <label class="campo"><span>Ao tocar na maquete, selecionar</span>
+            <select id="selNivel"><option value="folha">a casa / unidade</option><option value="pai">o rank ou pavimento</option><option value="avo">o grupo acima (trecho, torre)</option></select></label>
+          <label class="campo"><span>Nomes na maquete</span><select id="selRotulos"><option value="nenhum">Nenhum</option><option value="grupos">Só ranks e grupos</option><option value="todos">Todos</option></select></label>
+          <label class="chk-lin"><input type="checkbox" id="chkSombras"> Sombras (mais bonito, mais pesado)</label>
+          <button id="btnMover" title="Arrastar o elemento selecionado na maquete">✥ Mover elemento na maquete</button>
         </div>
-      </div>
-      <div class="bloco-barra">
-        <span class="rot-barra">Câmera</span>
-        <div class="seg" role="group" aria-label="Câmera">
-          <button id="btnGeral" title="Ver a obra inteira">⌂ Geral</button>
-          <button id="btnTopo" title="Ver de cima, como na planta">⊤ De cima</button>
-          <button id="btnFp" title="Andar pela obra como se estivesse lá">🚶 Caminhar</button>
-          <button id="btnPersonagem" title="Escolher na maquete o ponto onde a caminhada começa">📍 Partida</button>
-        </div>
-      </div>
-      <div class="bloco-barra fim">
-        <details class="mais">
-          <summary title="Mais opções de visualização">⚙</summary>
-          <div class="pop">
-            <label class="campo"><span>Ao clicar na maquete, selecionar</span>
-              <select id="selNivel"><option value="folha">a casa / unidade</option><option value="pai">o rank ou pavimento</option><option value="avo">o grupo acima (trecho, torre)</option></select></label>
-            <label class="campo"><span>Nomes na maquete</span><select id="selRotulos"><option value="nenhum">Nenhum</option><option value="grupos">Só ranks e grupos</option><option value="todos">Todos</option></select></label>
-            <label class="chk-lin"><input type="checkbox" id="chkSombras"> Sombras (mais bonito, mais pesado)</label>
-            <button id="btnMover" title="Arrastar o elemento selecionado na maquete">✥ Mover elemento na maquete</button>
-          </div>
-        </details>
-      </div>
+      </details>
     </div>
     <div id="cenas" class="cenas">
-      <p id="explicaModo" class="explica" title="Clique para recolher ou expandir"></p>
-      <button id="btnExpandir" class="expandir" title="Maquete em tela cheia (Esc para sair)">⛶ Expandir maquete</button>
+      <p id="explicaModo" class="explica" title="Toque para ver a explicação completa"></p>
+      <button id="btnExpandir" class="expandir" title="Maquete em tela cheia (Esc para sair)">⛶ Tela cheia</button>
       <button id="btnSairFoco" class="sair-foco" title="Voltar a mostrar os painéis (tecla F)">✕ Mostrar painéis</button>
       <button class="aba-borda esq" data-alternar="esq" title="Mostrar a lista de casas, ranks e áreas">Lista ›</button>
-      <button class="aba-borda dir" data-alternar="dir" title="Mostrar os indicadores">‹ Indicadores</button>
-      <button class="aba-borda baixo" data-alternar="editor" title="Mostrar o painel de lançamento">▴ Painel de lançamento</button>
+      <button class="aba-borda dir" data-alternar="dir" title="Mostrar o painel">‹ Painel</button>
       <div id="cenaA" class="cena"><span id="tagA" class="tag-cena"></span></div>
       <div id="cenaB" class="cena oculto"><span id="tagB" class="tag-cena b"></span></div>
       <div id="legenda" class="legenda"></div>
-      <div id="dicaColocar" class="dica-flutuante oculto">Clique no ponto da obra onde o personagem deve começar a caminhada. <button id="btnCancelarColocar" class="sec">Cancelar</button></div>
+      <div id="dicaColocar" class="dica-flutuante oculto">Toque no ponto da obra onde a caminhada deve começar. <button id="btnCancelarColocar" class="sec">Cancelar</button></div>
       <div id="ctrlFp" class="ctrl-fp oculto">
         <div class="fp-info">W A S D / setas para andar · arraste para olhar · Shift corre · Esc sai</div>
         <div class="pad">
@@ -119,17 +102,8 @@
     </div>
 
     <div class="linha-tempo">
-      <div class="lt-mes">
-        <span class="rot-barra">Mês do lançamento</span>
-        <div class="lt-ctrl">
-          <button id="btnAnt" class="seta" title="Mês anterior" aria-label="Mês anterior">‹</button>
-          <span id="rotMes" class="rot-mes"></span>
-          <button id="btnProx" class="seta" title="Próximo mês" aria-label="Próximo mês">›</button>
-          <button id="btnHoje" class="sec" title="Ir para o mês atual">Hoje</button>
-        </div>
-      </div>
       <div class="lt-trilho">
-        <input id="rangeMes" type="range" min="0" max="0" step="1" aria-label="Mês do lançamento">
+        <input id="rangeMes" type="range" min="0" max="0" step="1" aria-label="Mês">
         <div id="marcasMes" class="marcas"></div>
         <span id="periodo" class="periodo"></span>
       </div>
@@ -140,26 +114,45 @@
         <label id="wrapSync" class="chk-lin"><input type="checkbox" id="chkSync" checked> mover juntas</label>
       </div>
     </div>
-
-    <div id="editor" class="editor"></div>
   </section>
 
   <aside id="painelDir" class="lateral dir">
-    <div class="lat-topo"><h2>Indicadores</h2><button class="icone recolher" data-alternar="dir" title="Fechar os indicadores">»</button><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
-    <div id="indicadores" class="indicadores"></div>
+    <section class="secao-uso" data-secao="lancar">
+      <div class="lat-topo"><h2>Lançar avanço</h2><button class="icone recolher" data-alternar="dir" title="Esconder o painel">»</button><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
+      <div id="editor" class="editor"></div>
+    </section>
+    <section class="secao-uso" data-secao="acompanhar">
+      <div class="lat-topo"><h2>Acompanhar</h2><button class="icone recolher" data-alternar="dir" title="Esconder o painel">»</button><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
+      <div id="indicadores" class="indicadores"></div>
+    </section>
+    <section class="secao-uso" data-secao="configurar">
+      <div class="lat-topo"><h2>Configurar</h2><button class="icone recolher" data-alternar="dir" title="Esconder o painel">»</button><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
+      <div class="config">
+        <div class="config-cards">
+          <button id="btnObras" class="cfg"><b>🏗 Obras</b><span>Criar, abrir, duplicar e arquivar obras</span></button>
+          <button id="btnEditarObra" class="cfg"><b>✎ Dados da obra</b><span>Nome, datas, casas por rank</span></button>
+          <button id="btnEtapas" class="cfg"><b>☰ Etapas</b><span>Etapas, pesos e unidades de medição</span></button>
+          <button id="btnDocs" class="cfg"><b>📎 Documentos</b><span>Plantas e arquivos de referência</span></button>
+          <button id="btnDados" class="cfg"><b>⇅ Exportar e importar</b><span>Cópia da obra, planilha Excel, limpar avanços</span></button>
+        </div>
+        <div id="avisos" class="avisos"></div>
+        <h3 class="sub-config">Elemento selecionado</h3>
+        <div id="slotConfig"></div>
+      </div>
+    </section>
   </aside>
 </main>
 
 <div id="boasVindas" class="boas oculto">
   <div class="boas-cx">
-    <h3>Primeiros passos</h3>
+    <h3>Como usar</h3>
+    <p>No topo há três abas, uma para cada tarefa:</p>
     <ol>
-      <li>Escolha o <b>mês</b> na linha do tempo.</li>
-      <li>Clique numa <b>casa</b> (ou dois cliques para o <b>rank</b>) na cena ou na lista.</li>
-      <li>No painel de baixo, informe o realizado no mês ou arraste a barra. Grava sozinho.</li>
-      <li>Use <b>Finalizar</b> quando a unidade estiver pronta: aparece ✓ sobre ela.</li>
+      <li><b>✎ Lançar</b>: escolha o mês nas setas do topo, toque numa casa na maquete e use +5, +10 ou 100% em cada etapa. Grava sozinho.</li>
+      <li><b>📊 Acompanhar</b>: indicadores, evolução mês a mês e comparação entre meses.</li>
+      <li><b>⚙ Configurar</b>: obras, etapas, documentos e posição das casas.</li>
     </ol>
-    <p>O Villa Flora II já vem cadastrado (66 ranks × 3 casas), com avanços zerados e modelo esquemático para conferência.</p>
+    <p>Quando a casa estiver pronta, toque em <b>Finalizar</b>: aparece ✓ sobre ela na maquete.</p>
     <button id="fecharBoas" class="primario">Começar</button>
   </div>
 </div>
