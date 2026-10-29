@@ -6,7 +6,8 @@ import * as S from './store.js';
 import { fmtMes, mesesEntre, mesDe } from './meses.js';
 import { $, $$, esc, num, pct, lerNum, dataHora, tamanho, baixar, nomeArquivo, dialogo, confirmar, toast, escolherArquivo, lerArquivoTexto } from './util.js';
 import { gerarXlsx } from './xlsx.js';
-import { app, mutar, abrirObra, recarregarIndice, salvarAgora, atualizarPlanta, renderTudo, novaVillaFlora } from './app.js';
+import { app, mutar, abrirObra, recarregarIndice, salvarAgora, atualizarPlanta, renderTudo, novaVillaFlora, exigir, ehAdmin } from './app.js';
+import * as R from './remoto.js';
 import { rotCategoria } from './paineis.js';
 
 // ---------------------------------------------------------------- obras
@@ -39,6 +40,7 @@ export async function modalObras() {
         if (o === 'editar') { d.querySelector('[data-x]').click(); if (id !== app.obra.id) await abrirObra(id); return modalEditarObra(); }
         if (o === 'duplicar') { d.querySelector('[data-x]').click(); return modalDuplicar(id); }
         if (o === 'arquivar') {
+          if (!exigir('admin')) return;
           const ob = id === app.obra.id ? app.obra : await S.carregarObra(id);
           ob.arquivada = !ob.arquivada;
           if (id === app.obra.id) mutar(() => {}, { estrutura: true });
@@ -85,6 +87,7 @@ function camposGerador(tipo) {
 }
 
 export async function modalNovaObra() {
+  if (!exigir('admin')) return;
   const hoje = new Date();
   const ini = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`;
   const fim = `${hoje.getFullYear() + 2}-${String(hoje.getMonth() + 1).padStart(2, '0')}-28`;
@@ -172,6 +175,7 @@ export async function modalNovaObra() {
 }
 
 export async function modalEditarObra() {
+  if (!exigir('admin')) return;
   const o = app.obra;
   const r = await dialogo({
     titulo: `Editar obra: ${o.nome}`,
@@ -207,6 +211,7 @@ export async function modalEditarObra() {
 }
 
 export async function modalDuplicar(id) {
+  if (!exigir('admin')) return;
   const orig = id === app.obra.id ? app.obra : await S.carregarObra(id);
   const r = await dialogo({
     titulo: `Duplicar ${orig.nome}`,
@@ -246,6 +251,7 @@ export async function modalDuplicar(id) {
 // ---------------------------------------------------------------- etapas
 
 export async function modalEtapas() {
+  if (!exigir('admin')) return;
   // edição sobre uma cópia; só grava ao salvar
   let ets = JSON.parse(JSON.stringify(app.obra.etapas)).sort((a, b) => a.ordem - b.ordem);
   const usadas = new Set(Object.keys(app.obra.lancamentos).map((k) => k.split('|')[1]));
@@ -385,6 +391,7 @@ export async function modalDocumentos() {
       const ev = b.type === 'checkbox' ? 'onchange' : 'onclick';
       b[ev] = async () => {
         const a = b.dataset.d;
+        if (a !== 'abrir' && !exigir('admin')) { if (b.type === 'checkbox') b.checked = !b.checked; return; }
         if (a === 'add') {
           const fs = await escolherArquivo('', true);
           for (const f of fs) await anexar(f, null);
@@ -431,6 +438,7 @@ export async function modalDocumentos() {
     });
     d.querySelectorAll('[data-b]').forEach((i) => {
       i.onchange = async () => {
+        if (!exigir('admin')) return;
         const doc = app.obra.documentos.find((x) => x.id === i.closest('tr').dataset.id);
         const v = lerNum(i.value);
         if (!Number.isFinite(v)) return;
@@ -519,6 +527,7 @@ export async function exportarObra(incluirDocs = true) {
 }
 
 export async function importarObra(arquivoDado) {
+  if (!exigir('admin')) return;
   const f = arquivoDado || (await escolherArquivo('.json,application/json'))[0];
   if (!f) return;
   let p;
@@ -571,6 +580,7 @@ export async function importarObra(arquivoDado) {
 }
 
 export async function limparObra() {
+  if (!exigir('admin')) return;
   const a = C.alcanceLimpeza(app.obra);
   const r = await dialogo({
     titulo: `Limpar avanços de ${app.obra.nome}`,
@@ -665,5 +675,63 @@ export function modalAjuda() {
       <h4>Dados</h4><p>Tudo grava sozinho neste navegador. Em “Dados” você exporta a obra completa, importa, baixa planilha de conferência ou limpa os avanços (só da obra aberta).</p>
     </div>`,
     botoes: [{ rotulo: 'Entendi', valor: null, classe: 'primario' }],
+  });
+}
+
+// ---------------------------------------------------------------- usuários (versão web)
+
+const PAPEIS = { pendente: 'Aguardando liberação', leitura: 'Consulta', campo: 'Campo (lança avanço)', admin: 'Administrador' };
+
+export async function modalUsuarios() {
+  const eu = R.usuario();
+  let lista = [];
+  if (ehAdmin()) { try { lista = await R.listarUsuarios(); } catch (e) { toast(e.message, 'erro'); } }
+  const corpo = () => {
+    const pend = lista.filter((u) => u.papel === 'pendente');
+    return `<div class="dados-grid">
+      <div class="dados-bloco"><h4>Minha conta</h4>
+        <label class="campo"><span>Nome</span><input id="uNome" value="${esc(eu.nome)}"></label>
+        <p class="dica">${esc(eu.email)} · ${esc(PAPEIS[eu.papel] || eu.papel)}</p>
+        <div class="mini-acoes"><button data-u="nome">Salvar nome</button><button data-u="senha">Trocar senha</button><button class="perigo" data-u="sair">Sair</button></div></div>
+      <div class="dados-bloco"><h4>Papéis</h4><p><b>Consulta</b>: vê obras, indicadores e histórico. <b>Campo</b>: também lança avanço e finaliza unidades. <b>Administrador</b>: também altera estrutura, etapas, documentos, obras e usuários.</p></div>
+    </div>
+    ${ehAdmin() ? `<h4 style="margin-top:12px">Usuários ${pend.length ? `<span class="chip st-execucao">${pend.length} aguardando liberação</span>` : ''}</h4>
+      <div class="tab-wrap"><table class="tab-mini"><thead><tr><th>Nome</th><th>E-mail</th><th>Cadastro</th><th>Papel</th></tr></thead><tbody>
+      ${lista.sort((a, b) => (a.papel === 'pendente') === (b.papel === 'pendente') ? 0 : a.papel === 'pendente' ? -1 : 1).map((u) => `<tr class="${u.papel === 'pendente' ? 'pend' : ''}"><td>${esc(u.nome || '–')}</td><td>${esc(u.email)}</td><td>${dataHora(u.criado_em)}</td>
+        <td><select data-papel="${u.user_id}" ${u.user_id === eu.id ? 'disabled' : ''}>${Object.entries(PAPEIS).map(([k, v]) => `<option value="${k}" ${k === u.papel ? 'selected' : ''}>${v}</option>`).join('')}</select></td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="dica">Para incluir alguém: envie o endereço do aplicativo; a pessoa cria a conta e aparece aqui como “Aguardando liberação”.</p>` : ''}`;
+  };
+  await dialogo({
+    titulo: 'Usuários e acesso', largura: 820, html: corpo(), botoes: [{ rotulo: 'Fechar', valor: null, classe: 'primario' }],
+    aoAbrir: (d) => {
+      const ligar = () => {
+        d.querySelectorAll('[data-u]').forEach((b) => {
+          b.onclick = async () => {
+            try {
+              if (b.dataset.u === 'nome') { await R.salvarMeuNome(d.querySelector('#uNome').value.trim()); toast('Nome salvo.'); }
+              if (b.dataset.u === 'senha') {
+                const { perguntar } = await import('./util.js');
+                const nova = await perguntar('Trocar senha', 'Nova senha (mínimo 6 caracteres)', '', true);
+                if (nova) { await R.trocarSenha(nova); toast('Senha alterada.'); }
+              }
+              if (b.dataset.u === 'sair') { await salvarAgora(); await R.sair(); location.reload(); }
+            } catch (e) { toast(e.message, 'erro'); }
+          };
+        });
+        d.querySelectorAll('[data-papel]').forEach((sel) => {
+          sel.onchange = async () => {
+            try {
+              await R.definirPapel(sel.dataset.papel, sel.value);
+              lista = await R.listarUsuarios();
+              d.querySelector('.dlg-corpo').innerHTML = corpo();
+              ligar();
+              toast('Acesso atualizado.');
+            } catch (e) { toast(e.message, 'erro'); }
+          };
+        });
+      };
+      ligar();
+    },
   });
 }

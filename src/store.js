@@ -58,11 +58,11 @@ function ls() {
   return memoria;
 }
 
-export async function modoArmazenamento() {
+export async function modoArmazenamentoLocal() {
   return (await abrir()) ? 'IndexedDB' : 'localStorage';
 }
 
-export async function listarObras() {
+export async function listarObrasLocal() {
   const db = await abrir();
   if (!db) {
     const ids = ls().get('indice') || [];
@@ -71,13 +71,13 @@ export async function listarObras() {
   return tx(db, 'obras', 'readonly', (s) => req(s.getAll()));
 }
 
-export async function carregarObra(id) {
+export async function carregarObraLocal(id) {
   const db = await abrir();
   if (!db) return ls().get('obra:' + id);
   return tx(db, 'obras', 'readonly', (s) => req(s.get(id)));
 }
 
-export async function salvarObra(obra) {
+export async function salvarObraLocal(obra) {
   obra.atualizadoEm = new Date().toISOString();
   const db = await abrir();
   const copia = JSON.parse(JSON.stringify(obra));
@@ -91,7 +91,7 @@ export async function salvarObra(obra) {
   await tx(db, 'obras', 'readwrite', (s) => req(s.put(copia)));
 }
 
-export async function excluirObra(id) {
+export async function excluirObraLocal(id) {
   const db = await abrir();
   if (!db) {
     ls().set('indice', (ls().get('indice') || []).filter((x) => x !== id));
@@ -114,7 +114,7 @@ export async function meta(k, v) {
 
 // ---------------------------------------------------------------- arquivos
 
-export async function salvarArquivo({ id, obraId, nome, mime, blob }) {
+export async function salvarArquivoLocal({ id, obraId, nome, mime, blob }) {
   const db = await abrir();
   if (!db) {
     const dataUrl = await blobParaDataUrl(blob);
@@ -125,7 +125,7 @@ export async function salvarArquivo({ id, obraId, nome, mime, blob }) {
   return id;
 }
 
-export async function lerArquivo(id) {
+export async function lerArquivoLocal(id) {
   if (!id) return null;
   const db = await abrir();
   if (!db) {
@@ -136,7 +136,7 @@ export async function lerArquivo(id) {
   return tx(db, 'arquivos', 'readonly', (s) => req(s.get(id)));
 }
 
-export async function excluirArquivo(id) {
+export async function excluirArquivoLocal(id) {
   const db = await abrir();
   if (!db) return ls().del('arq:' + id);
   await tx(db, 'arquivos', 'readwrite', (s) => req(s.delete(id)));
@@ -154,3 +154,20 @@ export function blobParaDataUrl(blob) {
 export async function dataUrlParaBlob(url) {
   return (await fetch(url)).blob();
 }
+
+// ---------------------------------------------------------------- modo compartilhado
+// Com um servidor configurado (versão web), as mesmas funções passam a ler e
+// gravar no banco compartilhado; o IndexedDB fica como cópia local do aparelho.
+
+let remoto = null;
+export function usarRemoto(r) { remoto = r; }
+export function emModoRemoto() { return !!remoto; }
+
+export async function modoArmazenamento() { return remoto ? 'servidor compartilhado' : modoArmazenamentoLocal(); }
+export async function listarObras() { return remoto ? remoto.listarObras() : listarObrasLocal(); }
+export async function carregarObra(id) { return remoto ? remoto.carregarObra(id) : carregarObraLocal(id); }
+export async function salvarObra(obra) { return remoto ? remoto.salvarObra(obra) : salvarObraLocal(obra); }
+export async function excluirObra(id) { return remoto ? remoto.excluirObra(id) : excluirObraLocal(id); }
+export async function salvarArquivo(a) { return remoto ? remoto.salvarArquivo(a) : salvarArquivoLocal(a); }
+export async function lerArquivo(id) { return remoto ? remoto.lerArquivo(id) : lerArquivoLocal(id); }
+export async function excluirArquivo(id) { return remoto ? remoto.excluirArquivo(id) : excluirArquivoLocal(id); }

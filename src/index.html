@@ -25,6 +25,7 @@
     <button id="btnDados" title="Exportar, importar, planilha e limpeza">Dados</button>
     <button id="btnAjuda" title="Instruções">Ajuda</button>
   </nav>
+  <span id="usuario" class="usuario oculto"></span>
   <span id="statusSalvo" class="salvo">…</span>
   <div class="moveis">
     <button data-painel="#painelEsq">☰ Elementos</button>
@@ -132,6 +133,26 @@
     </ol>
     <p>O Villa Flora II já vem cadastrado (66 ranks × 3 casas), com avanços zerados e modelo esquemático para conferência.</p>
     <button id="fecharBoas" class="primario">Começar</button>
+  </div>
+</div>
+<div id="login" class="login oculto">
+  <div class="login-cx">
+    <div class="marca login-marca"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16 16 6l12 10v11H4z" fill="#2f6b4f"/><path d="M11 27v-7h10v7" fill="#ffb000"/></svg><span>Obras&nbsp;3D</span></div>
+    <form id="loginForm" autocomplete="on">
+      <h3 id="loginTitulo">Entrar</h3>
+      <label class="campo oculto" id="loginNomeWrap"><span>Seu nome</span><input id="loginNome" autocomplete="name"></label>
+      <label class="campo"><span>E-mail</span><input id="loginEmail" type="email" autocomplete="email" required></label>
+      <label class="campo" id="loginSenhaWrap"><span>Senha</span><input id="loginSenha" type="password" autocomplete="current-password"></label>
+      <p id="loginMsg" class="dica"></p>
+      <button id="loginOk" class="primario" type="submit">Entrar</button>
+      <div class="login-links"><button class="link" data-login="entrar" type="button">Já tenho conta</button><button class="link" data-login="criar" type="button">Criar conta</button><button class="link" data-login="recuperar" type="button">Esqueci a senha</button></div>
+      <p class="dica">Quem cria conta aguarda a liberação de um administrador, que define se o acesso é de campo (lança avanços) ou de consulta.</p>
+    </form>
+    <div id="loginPendente" class="oculto">
+      <h3>Cadastro recebido</h3>
+      <p>O acesso de <b id="loginPendenteEmail"></b> aguarda liberação de um administrador da obra. Avise o responsável e entre de novo depois.</p>
+      <div class="login-links"><button id="loginRecarregar" class="primario" type="button">Já fui liberado</button><button id="loginSairPend" class="link" type="button">Usar outro e-mail</button></div>
+    </div>
   </div>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>

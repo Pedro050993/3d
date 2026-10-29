@@ -9,6 +9,7 @@ import { $, $$, esc, toast, dialogo } from './util.js';
 import { renderArvore, ligarArvore, renderIndicadores, ligarIndicadores, renderLegenda } from './paineis.js';
 import { renderEditor, ligarEditor, moverPorArrasto } from './editor.js';
 import * as Modais from './modais.js';
+import * as R from './remoto.js';
 
 export const app = {
   indice: [],
@@ -49,6 +50,7 @@ const EXPLICA = {
 
 let timerSalvar = null;
 let salvando = Promise.resolve();
+let timerReenvio = null;
 
 export function salvarDepois() {
   clearTimeout(timerSalvar);
@@ -68,8 +70,15 @@ export async function salvarAgora() {
       marcarSalvo('ok');
     } catch (e) {
       console.error(e);
-      marcarSalvo('erro');
-      toast('Não foi possível gravar neste navegador. Exporte uma cópia em “Dados”.', 'erro');
+      if (S.emModoRemoto()) {
+        marcarSalvo('offline');
+        toast(`Não subiu para o servidor (${e.message}). Fica guardado neste aparelho e é reenviado sozinho.`, 'erro');
+        clearTimeout(timerReenvio);
+        timerReenvio = setTimeout(() => salvarAgora(), 30000);
+      } else {
+        marcarSalvo('erro');
+        toast('Não foi possível gravar neste navegador. Exporte uma cópia em “Dados”.', 'erro');
+      }
     }
   });
   return salvando;
@@ -101,14 +110,27 @@ function marcarSalvo(st) {
   if (!el) return;
   if (st === 'pendente') { el.textContent = 'Gravando…'; el.className = 'salvo pend'; }
   else if (st === 'erro') { el.textContent = 'Erro ao gravar'; el.className = 'salvo erro'; }
+  else if (st === 'offline') { el.textContent = 'Sem conexão · guardado no aparelho'; el.className = 'salvo erro'; }
   else { el.textContent = `Salvo ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; el.className = 'salvo ok'; }
 }
 
 // ---------------------------------------------------------------- mutação
 
 // Aplica uma alteração na obra aberta, reindexa, agenda a gravação e redesenha.
+export const papelAtual = () => (S.emModoRemoto() ? R.papel() : 'admin');
+export const ehAdmin = () => papelAtual() === 'admin';
+export const podeLancar = () => ['admin', 'campo'].includes(papelAtual());
+
+// Bloqueia na interface o que o papel não permite (o servidor também bloqueia).
+export function exigir(nivel) {
+  if (nivel === 'admin' && !ehAdmin()) { toast('Somente administradores alteram estrutura, etapas, documentos e obras.', 'erro'); return false; }
+  if (nivel === 'campo' && !podeLancar()) { toast('Seu acesso é de consulta. Peça ao administrador para liberar lançamentos.', 'erro'); return false; }
+  return true;
+}
+
 export function mutar(fn, opts = {}) {
   if (!app.obra) return;
+  if (!exigir(opts.estrutura || opts.admin ? 'admin' : 'campo')) { renderTudo({ cena: false }); return; }
   fn(app.obra, app.idx);
   app.idx = C.indexar(app.obra);
   if (opts.periodo !== false) atualizarPeriodo();
@@ -160,6 +182,26 @@ export async function abrirObra(id) {
   app.vA.vistaGeral();
   if (app.vB) app.vB.aplicarCamera(app.vA.estadoCamera());
   await atualizarPlanta();
+  if (S.emModoRemoto()) R.acompanhar(id, aplicarRemoto);
+}
+
+// alterações de outras pessoas chegando em tempo real
+let timerRemoto = null;
+function aplicarRemoto(fn, por, estrutura) {
+  if (!app.obra) return;
+  const meu = R.usuario();
+  if (meu && por === meu.id && !estrutura) return; // eco do que eu mesmo gravei
+  fn(app.obra);
+  app.idx = C.indexar(app.obra);
+  clearTimeout(timerRemoto);
+  const redesenhar = () => {
+    const ativo = document.activeElement;
+    if (ativo && ativo.closest && ativo.closest('#editor') && /INPUT|SELECT|TEXTAREA/.test(ativo.tagName)) { timerRemoto = setTimeout(redesenhar, 1500); return; }
+    atualizarPeriodo();
+    renderTudo();
+    marcarSalvo('ok');
+  };
+  timerRemoto = setTimeout(redesenhar, 600);
 }
 
 // ---------------------------------------------------------------- planta de base
@@ -498,6 +540,13 @@ function fecharCaminhada() {
 // ---------------------------------------------------------------- início
 
 async function iniciar() {
+  if (R.configurado()) {
+    await telaLogin();
+    S.usarRemoto(R);
+    document.body.classList.add('papel-' + R.papel());
+    renderUsuario();
+    window.addEventListener('online', () => salvarAgora());
+  }
   app.sombras = !matchMedia('(pointer: coarse)').matches;
   app.explicaCurta = matchMedia('(max-width: 820px)').matches;
   const sincronizar = (origem) => {
@@ -535,10 +584,14 @@ async function iniciar() {
 
   await recarregarIndice();
   if (!app.indice.length) {
+    if (!ehAdmin()) {
+      $('#carregando').innerHTML = '<p>Nenhuma obra cadastrada ainda. Aguarde o administrador cadastrar a primeira obra e recarregue a página.</p>';
+      return;
+    }
     await S.salvarObra(await novaVillaFlora());
     await recarregarIndice();
   }
-  const avisoMigracao = await migrarVillaFloraR02();
+  const avisoMigracao = S.emModoRemoto() ? null : await migrarVillaFloraR02();
   const ultima = await S.meta('ultimaObra');
   const alvo = app.indice.find((o) => o.id === ultima && !o.arquivada) || app.indice.find((o) => !o.arquivada) || app.indice[0];
   await abrirObra(alvo.id);
@@ -617,3 +670,97 @@ iniciar().catch((e) => {
   const c = $('#carregando');
   if (c) c.innerHTML = `<p>Erro ao iniciar: ${esc(e.message)}</p>`;
 });
+
+// ---------------------------------------------------------------- login (versão web)
+
+function telaLogin() {
+  return new Promise((pronto) => {
+    const tela = $('#login');
+    const msg = (t, erro = false) => { const m = $('#loginMsg'); m.textContent = t; m.className = erro ? 'erro' : 'dica'; };
+    const mostrar = (modo) => {
+      tela.dataset.modo = modo;
+      $('#loginNomeWrap').classList.toggle('oculto', modo !== 'criar');
+      $('#loginSenhaWrap').classList.toggle('oculto', modo === 'recuperar');
+      $('#loginOk').textContent = modo === 'criar' ? 'Criar conta' : modo === 'recuperar' ? 'Enviar link para nova senha' : 'Entrar';
+      $('#loginTitulo').textContent = modo === 'criar' ? 'Criar conta' : modo === 'recuperar' ? 'Recuperar senha' : 'Entrar';
+      msg('');
+    };
+    const verificar = async () => {
+      const p = await R.carregarPerfil();
+      if (!p) return false;
+      if (p.papel === 'pendente') {
+        tela.classList.remove('oculto');
+        $('#loginForm').classList.add('oculto');
+        $('#loginPendente').classList.remove('oculto');
+        $('#loginPendenteEmail').textContent = p.email;
+        return false;
+      }
+      tela.classList.add('oculto');
+      $('#carregando').classList.remove('oculto');
+      pronto(p);
+      return true;
+    };
+    $('#loginSairPend').onclick = async () => { await R.sair(); location.reload(); };
+    $('#loginRecarregar').onclick = () => location.reload();
+    $$('[data-login]').forEach((b) => { b.onclick = (ev) => { ev.preventDefault(); mostrar(b.dataset.login); }; });
+    $('#loginForm').onsubmit = async (ev) => {
+      ev.preventDefault();
+      const email = $('#loginEmail').value.trim();
+      const senha = $('#loginSenha').value;
+      const nome = $('#loginNome').value.trim();
+      const modo = tela.dataset.modo || 'entrar';
+      $('#loginOk').disabled = true;
+      try {
+        if (!email) throw new Error('Informe o e-mail.');
+        if (modo === 'recuperar') {
+          await R.recuperarSenha(email);
+          msg('Se o e-mail estiver cadastrado, chega um link para criar nova senha.');
+        } else if (modo === 'criar') {
+          if (!nome) throw new Error('Informe seu nome.');
+          if (senha.length < 6) throw new Error('A senha precisa ter pelo menos 6 caracteres.');
+          const entrou = await R.criarConta(email, senha, nome);
+          if (entrou) await verificar();
+          else {
+            $('#loginForm').classList.add('oculto');
+            $('#loginPendente').classList.remove('oculto');
+            $('#loginPendenteEmail').textContent = email;
+          }
+        } else {
+          await R.entrar(email, senha);
+          await verificar();
+        }
+      } catch (e) {
+        msg(e.message, true);
+      } finally {
+        $('#loginOk').disabled = false;
+      }
+    };
+    R.cliente().auth.onAuthStateChange((evento) => {
+      if (evento === 'PASSWORD_RECOVERY') {
+        setTimeout(async () => {
+          tela.classList.add('oculto');
+          const { perguntar } = await import('./util.js');
+          const s2 = await perguntar('Nova senha', 'Digite a nova senha (mínimo 6 caracteres)', '', true);
+          if (s2) { try { await R.trocarSenha(s2); toast('Senha alterada.'); } catch (e) { toast(e.message, 'erro'); } }
+        }, 300);
+      }
+    });
+    mostrar('entrar');
+    (async () => {
+      $('#carregando').classList.add('oculto');
+      const sess = await R.sessaoAtual().catch(() => null);
+      if (sess && (await verificar().catch(() => false))) { $('#carregando').classList.remove('oculto'); return; }
+      tela.classList.remove('oculto');
+    })();
+  });
+}
+
+function renderUsuario() {
+  const u = R.usuario();
+  const el = $('#usuario');
+  if (!u || !el) return;
+  const rot = { admin: 'Administrador', campo: 'Campo', leitura: 'Consulta' }[u.papel] || u.papel;
+  el.innerHTML = `<button class="usuario-bt" id="btnUsuario" title="${esc(u.email)}">${esc(u.nome || u.email)} · <b>${rot}</b></button>`;
+  el.classList.remove('oculto');
+  $('#btnUsuario').onclick = () => Modais.modalUsuarios();
+}

@@ -4,7 +4,7 @@ import * as C from './calc.js';
 import { FORMAS, CLASSES, novoElemento } from './model.js';
 import { fmtMes, mesAnterior, validaMes } from './meses.js';
 import { $, $$, esc, num, pct, pp, lerNum, dataHora, dialogo, confirmar, perguntar, toast } from './util.js';
-import { app, mutar, selecionar, renderTudo } from './app.js';
+import { app, mutar, selecionar, renderTudo, ehAdmin, podeLancar } from './app.js';
 import { rotCategoria } from './paineis.js';
 import { corAvanco } from './scene.js';
 
@@ -37,6 +37,18 @@ export function renderEditor() {
   }
   if (a.tipo === 'folha') el.innerHTML = htmlFolha(a.elem);
   else el.innerHTML = htmlGrupo(a);
+  aplicarPapel(el);
+}
+
+// esconde o que o papel não permite: estrutura só para administradores; consulta não edita
+function aplicarPapel(el) {
+  if (!ehAdmin()) el.querySelectorAll('[data-aba=props]').forEach((b) => b.remove());
+  if (!podeLancar()) {
+    const livres = '[data-aba], [data-ir], [data-acao=selPai], [data-acao=focar], [data-acao=limparSel]';
+    el.querySelectorAll('input, select, textarea, button').forEach((c) => { if (!c.matches(livres)) c.disabled = true; });
+    const t = el.querySelector('.ed-topo');
+    if (t && !el.querySelector('.aviso-leitura')) t.insertAdjacentHTML('afterend', '<p class="aviso-leitura dica">Acesso de consulta: os valores aparecem, mas não podem ser alterados.</p>');
+  }
 }
 
 // ---------------------------------------------------------------- folha
@@ -50,7 +62,7 @@ function htmlFolha(e) {
   const s = C.statusElem(idx, e, mes);
   const fis = C.progElem(idx, e, mes);
   const conc = C.situacaoConclusao(app.obra, e.id, mes);
-  const aba = ['avanco', 'historico', 'props'].includes(app.abaEditor) ? app.abaEditor : 'avanco';
+  const aba = ['avanco', 'historico', ...(ehAdmin() ? ['props'] : [])].includes(app.abaEditor) ? app.abaEditor : 'avanco';
   return `<div class="ed-topo">
       <div class="alvo"><span class="rot">Lançamento em</span><b class="nome-alvo">${esc(e.nome)}</b>
         <span class="cam">${esc(caminho(e.id))}${e.categoria ? ` · ${esc(rotCategoria(e.categoria))}` : ''}${e.tipologia ? ` · ${esc(e.tipologia)}` : ''}</span>
@@ -120,12 +132,12 @@ function historicoFolha(e) {
     const et = r.etapaId ? idx.etapasById.get(r.etapaId) : null;
     const tipo = { lancamento: 'Lançamento', correcao: 'Correção', conclusao: 'Conclusão', conclusao_removida: 'Conclusão removida', conclusao_corrigida: 'Conclusão corrigida' }[r.tipo] || r.tipo;
     const det = r.etapaId ? `${et ? esc(et.nome) : '?'}: ${num(r.antes, 2)} → ${num(r.depois, 2)}${et && et.unidade !== '%' ? ' ' + esc(et.unidade) : ''}` : esc(r.acao || '');
-    return `<tr class="${r.tipo === 'correcao' ? 'corr' : ''}"><td>${dataHora(r.em)}</td><td>${tipo}${r.origem === 'coletivo' ? ' (coletivo)' : ''}</td><td>${fmtMes(r.comp)}</td><td>${det}</td><td>${esc(r.motivo || '')}</td></tr>`;
+    return `<tr class="${r.tipo === 'correcao' ? 'corr' : ''}"><td>${dataHora(r.em)}</td><td>${tipo}${r.origem === 'coletivo' ? ' (coletivo)' : ''}</td><td>${fmtMes(r.comp)}</td><td>${det}</td><td>${esc(r.motivo || '')}</td><td>${esc(r.porNome || '')}</td></tr>`;
   }).join('');
   return `<div class="hist-grid">
     <div><h4>Lançamentos (realizado por mês)</h4>${linhas ? `<table class="tab-mini"><thead><tr><th>Mês</th><th>Etapa</th><th>Realizado</th><th>Acum.</th><th>Origem</th><th></th></tr></thead><tbody>${linhas}</tbody></table>` : '<p class="vazio">Sem lançamentos.</p>'}</div>
     <div><h4>Conclusão / entrega</h4>${conc ? `<table class="tab-mini"><thead><tr><th>Mês</th><th>Situação</th><th>Obs.</th><th></th></tr></thead><tbody>${conc}</tbody></table>` : '<p class="vazio">Sem registro de conclusão.</p>'}
-      <h4>Registro de alterações</h4>${revs ? `<table class="tab-mini"><thead><tr><th>Quando</th><th>Tipo</th><th>Mês</th><th>Detalhe</th><th>Motivo</th></tr></thead><tbody>${revs}</tbody></table>` : '<p class="vazio">Nada registrado.</p>'}</div></div>`;
+      <h4>Registro de alterações</h4>${revs ? `<table class="tab-mini"><thead><tr><th>Quando</th><th>Tipo</th><th>Mês</th><th>Detalhe</th><th>Motivo</th><th>Por</th></tr></thead><tbody>${revs}</tbody></table>` : '<p class="vazio">Nada registrado.</p>'}</div></div>`;
 }
 
 function propsElem(e) {
@@ -192,7 +204,7 @@ function htmlGrupo(a) {
   const p = C.progConjunto(idx, a.folhas, mes);
   const pAnt = C.progConjunto(idx, a.folhas, mesAnterior(mes));
   const nomeUn = nomeUnidades(a.folhas);
-  const aba = ['coletivo', 'final', 'elems', 'props'].includes(app.abaEditor) ? app.abaEditor : 'coletivo';
+  const aba = ['coletivo', 'final', 'elems', ...(ehAdmin() ? ['props'] : [])].includes(app.abaEditor) ? app.abaEditor : 'coletivo';
   const titulo = a.grupo ? esc(a.grupo.nome) : `Conjunto de ${a.els.length} seleções`;
   return `<div class="ed-topo">
       <div class="alvo"><span class="rot">Lançamento coletivo em</span><b class="nome-alvo">${titulo}</b>

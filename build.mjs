@@ -1,7 +1,7 @@
 // Gera dist/index.html: um único arquivo com JS e CSS embutidos, que abre
 // direto no navegador (duplo clique) sem servidor.
 import { build } from 'esbuild';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 
 const r = await build({
   entryPoints: ['src/app.js'],
@@ -30,3 +30,13 @@ const cabeca = html.slice(html.indexOf('<head>') + 6, html.indexOf('</head>'))
 const corpo = html.slice(html.indexOf('<body>') + 6, html.lastIndexOf('</body>'));
 writeFileSync('dist/artifact.html', cabeca.trim() + '\n' + corpo.trim() + '\n');
 console.log('dist/artifact.html gerado');
+
+// Versão web compartilhada: mesma página com o endereço do servidor (Supabase).
+// A chave é a publicável: o acesso aos dados é controlado pelas regras do banco.
+if (existsSync('config.web.json')) {
+  const cfg = JSON.parse(readFileSync('config.web.json', 'utf8'));
+  const web = html.replace('<script>', () => `<script>window.OBRAS3D_CONFIG=${JSON.stringify(cfg)};</script>\n<script>`);
+  mkdirSync('dist/web', { recursive: true });
+  writeFileSync('dist/web/index.html', web);
+  console.log('dist/web/index.html gerado');
+}
