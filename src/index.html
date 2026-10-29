@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Obras 3D · Acompanhamento físico</title>
+<meta name="description" content="Acompanhamento físico de obras em 3D: lançamentos mensais acumulados por casa, rank, apartamento, área comum e infraestrutura.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 16 16 6l12 10v11H4z' fill='%232f6b4f'/%3E%3Cpath d='M11 27v-7h10v7' fill='%23ffb000'/%3E%3C/svg%3E">
+<!--CSS-->
+</head>
+<body>
+<div id="carregando"><div class="spin"></div><p>Abrindo obras…</p></div>
+
+<header class="topo">
+  <div class="marca"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16 16 6l12 10v11H4z" fill="#2f6b4f"/><path d="M11 27v-7h10v7" fill="#ffb000"/></svg><span>Obras&nbsp;3D</span></div>
+  <div class="obra-sel">
+    <label for="selObra" class="sr">Obra</label>
+    <select id="selObra" title="Obra aberta"></select>
+    <button id="btnEditarObra" class="icone" title="Editar dados e datas da obra">✎</button>
+  </div>
+  <nav class="menu">
+    <button id="btnObras" title="Criar, duplicar, arquivar e abrir obras">Obras</button>
+    <button id="btnEtapas" title="Etapas, unidades e pesos">Etapas</button>
+    <button id="btnDocs" title="Plantas e documentos">Documentos</button>
+    <button id="btnDados" title="Exportar, importar, planilha e limpeza">Dados</button>
+    <button id="btnAjuda" title="Instruções">Ajuda</button>
+  </nav>
+  <span id="statusSalvo" class="salvo">…</span>
+  <div class="moveis">
+    <button data-painel="#painelEsq">☰ Elementos</button>
+    <button data-painel="#painelDir">📊 Indicadores</button>
+  </div>
+</header>
+<div id="avisos" class="avisos"></div>
+
+<main class="corpo">
+  <aside id="painelEsq" class="lateral esq">
+    <div class="lat-topo"><h2>Elementos da obra</h2><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
+    <div class="filtros">
+      <input id="buscaElem" type="search" placeholder="Buscar casa, rank, área…">
+      <select id="filtroStatus" title="Filtrar por situação no mês">
+        <option value="">Todas as situações</option>
+        <option value="nao_iniciado">Não iniciado</option>
+        <option value="execucao">Em execução</option>
+        <option value="concluido">100% físico</option>
+        <option value="finalizado">Finalizado</option>
+        <option value="entregue">Entregue</option>
+      </select>
+    </div>
+    <div id="arvore" class="arvore" role="tree"></div>
+    <div id="resumoDocs" class="resumo-docs"></div>
+  </aside>
+
+  <section class="centro">
+    <div class="barra3d">
+      <div class="grupo-bt modos" role="group" aria-label="Modo de visualização">
+        <button data-modo="maquete">Maquete</button>
+        <button data-modo="avanco">Por avanço</button>
+        <button data-modo="mudou">O que mudou</button>
+        <span id="wrapEtapa" class="wrap-etapa"><button data-modo="etapa">Etapa</button><select id="selEtapa" title="Etapa"></select></span>
+      </div>
+      <div class="grupo-bt vistas" role="group" aria-label="Vistas">
+        <button id="btnGeral" title="Visão geral">⌂ Geral</button>
+        <button id="btnTopo" title="Vista superior">⊤ Superior</button>
+        <button id="btnPersonagem" title="Clique no ponto da obra para colocar o personagem e começar a caminhar">🧍 Personagem</button>
+        <button id="btnFp" title="Caminhar em primeira pessoa">👁 1ª pessoa</button>
+        <button id="btnLado" title="Duas competências lado a lado">◫ Lado a lado</button>
+        <label id="wrapSync" class="chk-lin"><input type="checkbox" id="chkSync" checked> sincronizar</label>
+      </div>
+      <div class="grupo-bt opcoes">
+        <label class="chk-lin" title="Ao clicar na cena, selecionar a unidade ou o grupo">Seleção
+          <select id="selNivel"><option value="folha">Unidade</option><option value="pai">Grupo (rank, pav.)</option><option value="avo">Grupo acima (fase, torre)</option></select></label>
+        <label class="chk-lin">Rótulos <select id="selRotulos"><option value="nenhum">Nenhum</option><option value="grupos">Grupos</option><option value="todos">Todos</option></select></label>
+        <label class="chk-lin"><input type="checkbox" id="chkSombras"> sombras</label>
+        <button id="btnMover" title="Arrastar elemento selecionado na cena">✥ Mover</button>
+      </div>
+    </div>
+    <div id="cenas" class="cenas">
+      <p id="explicaModo" class="explica" title="Clique para recolher ou expandir"></p>
+      <div id="cenaA" class="cena"><span id="tagA" class="tag-cena"></span></div>
+      <div id="cenaB" class="cena oculto"><span id="tagB" class="tag-cena b"></span></div>
+      <div id="legenda" class="legenda"></div>
+      <div id="dicaColocar" class="dica-flutuante oculto">Clique no ponto da obra onde o personagem deve começar a caminhada. <button id="btnCancelarColocar" class="sec">Cancelar</button></div>
+      <div id="ctrlFp" class="ctrl-fp oculto">
+        <div class="fp-info">W A S D / setas para andar · arraste para olhar · Shift corre · Esc sai</div>
+        <div class="pad">
+          <button data-mov="girarE" aria-label="Girar à esquerda">⟲</button>
+          <button data-mov="frente" aria-label="Frente">▲</button>
+          <button data-mov="girarD" aria-label="Girar à direita">⟳</button>
+          <button data-mov="esquerda" aria-label="Esquerda">◀</button>
+          <button data-mov="tras" aria-label="Trás">▼</button>
+          <button data-mov="direita" aria-label="Direita">▶</button>
+        </div>
+        <div class="fp-acoes"><button id="btnCorrer">🏃 Correr</button><button id="btnSairFp" class="sair">✕ Sair da caminhada</button></div>
+      </div>
+    </div>
+
+    <div class="linha-tempo">
+      <div class="lt-ctrl">
+        <button id="btnAnt" title="Mês anterior">◀</button>
+        <button id="btnPlay" title="Reproduzir">▶</button>
+        <button id="btnProx" title="Próximo mês">▶▶</button>
+        <span id="rotMes" class="rot-mes"></span>
+        <button id="btnHoje" class="sec" title="Ir para o mês atual">hoje</button>
+      </div>
+      <div class="lt-trilho">
+        <input id="rangeMes" type="range" min="0" max="0" step="1" aria-label="Competência">
+        <div id="marcasMes" class="marcas"></div>
+        <span id="periodo" class="periodo"></span>
+      </div>
+      <label class="lt-comp">Comparar com <select id="selComp"></select></label>
+      <button id="btnRecolherEditor" class="icone" title="Recolher/expandir painel de lançamento">▾</button>
+    </div>
+
+    <div id="editor" class="editor"></div>
+  </section>
+
+  <aside id="painelDir" class="lateral dir">
+    <div class="lat-topo"><h2>Indicadores</h2><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
+    <div id="indicadores" class="indicadores"></div>
+  </aside>
+</main>
+
+<div id="boasVindas" class="boas oculto">
+  <div class="boas-cx">
+    <h3>Primeiros passos</h3>
+    <ol>
+      <li>Escolha o <b>mês</b> na linha do tempo.</li>
+      <li>Clique numa <b>casa</b> (ou dois cliques para o <b>rank</b>) na cena ou na lista.</li>
+      <li>No painel de baixo, informe o realizado no mês ou arraste a barra. Grava sozinho.</li>
+      <li>Use <b>Finalizar</b> quando a unidade estiver pronta: aparece ✓ sobre ela.</li>
+    </ol>
+    <p>O Villa Flora II já vem cadastrado (66 ranks × 3 casas), com avanços zerados e modelo esquemático para conferência.</p>
+    <button id="fecharBoas" class="primario">Começar</button>
+  </div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<!--JS-->
+</body>
+</html>
