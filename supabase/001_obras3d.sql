@@ -151,3 +151,9 @@ create policy docs_trocar on storage.objects for update to authenticated
   using (bucket_id = 'documentos' and (select public.meu_papel()) = 'admin');
 create policy docs_apagar on storage.objects for delete to authenticated
   using (bucket_id = 'documentos' and (select public.meu_papel()) = 'admin');
+
+-- meu_papel só para quem está logado
+revoke all on function public.meu_papel() from public, anon;
+grant execute on function public.meu_papel() to authenticated;
+revoke all on function public.antes_novo_usuario() from public, anon, authenticated;
+revoke all on function public.apos_novo_usuario() from public, anon, authenticated;

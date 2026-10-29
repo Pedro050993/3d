@@ -98,6 +98,8 @@ export async function salvarMeuNome(nome) {
 function traduzir(e) {
   const m = String(e && (e.message || e.error_description || e)).toLowerCase();
   const msg = m.includes('invalid login') ? 'E-mail ou senha incorretos.'
+    : m.includes('is invalid') && m.includes('email') ? 'E-mail inválido. Confira o endereço.'
+      : m.includes('sending confirmation') || m.includes('not authorized') ? 'O servidor não conseguiu enviar o e-mail de confirmação. Avise o administrador para desligar a confirmação por e-mail no Supabase.'
     : m.includes('email not confirmed') ? 'Cadastro ainda não liberado pelo administrador.'
       : m.includes('already registered') ? 'Este e-mail já tem cadastro. Use “Entrar”.'
         : m.includes('password should be') ? 'A senha precisa ter pelo menos 6 caracteres.'
