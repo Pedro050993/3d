@@ -462,6 +462,33 @@ await p.waitForTimeout(200);
 ok(await A(() => __app.obra.etapas.some((e) => e.nome === 'Nova etapa' && e.grupo === 'unidade')), 'etapa nova cadastrada pela interface');
 
 // ------------------------------------------------------------------
+passo('Painéis que abrem e fecham (foco na maquete)');
+const largura0 = await p.locator('#cenaA').evaluate((e) => e.clientWidth);
+await p.click('.grupo-bt.paineis [data-alternar=esq]');
+await p.waitForTimeout(200);
+ok(await A(() => getComputedStyle(document.querySelector('#painelEsq')).display === 'none'), 'lista de elementos fecha');
+await p.click('.grupo-bt.paineis [data-alternar=dir]');
+await p.click('.grupo-bt.paineis [data-alternar=editor]');
+await p.waitForTimeout(300);
+const largura1 = await p.locator('#cenaA').evaluate((e) => e.clientWidth);
+const altura1 = await p.locator('#cenaA').evaluate((e) => e.clientHeight);
+ok(largura1 > largura0 + 400, `maquete ganha espaço (${largura0} → ${largura1} px de largura)`);
+ok(await A(() => document.body.classList.contains('foco')), 'com os três fechados entra em foco');
+await foto('13-foco-maquete');
+await p.reload();
+await pronto();
+ok(await A(() => document.body.classList.contains('sem-esq') && document.body.classList.contains('editor-recolhido')), 'escolha dos painéis lembrada ao reabrir');
+await p.click('#btnSairFoco');
+await p.waitForTimeout(300);
+ok(await A(() => !document.body.classList.contains('foco') && getComputedStyle(document.querySelector('#painelEsq')).display !== 'none' && getComputedStyle(document.querySelector('#editor')).display !== 'none'), 'botão “Mostrar painéis” reabre tudo');
+await p.keyboard.press('f');
+await p.waitForTimeout(200);
+ok(await A(() => document.body.classList.contains('foco')), 'tecla F alterna o foco');
+await p.keyboard.press('f');
+const altura2 = await p.locator('#cenaA').evaluate((e) => e.clientHeight);
+ok(altura1 > altura2, `fechar o lançamento aumenta a altura da maquete (${altura2} → ${altura1} px)`);
+
+// ------------------------------------------------------------------
 passo('Toque (celular)');
 const ctxM = await b.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 const pm = await ctxM.newPage();

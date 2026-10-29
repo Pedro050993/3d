@@ -36,7 +36,7 @@
 
 <main class="corpo">
   <aside id="painelEsq" class="lateral esq">
-    <div class="lat-topo"><h2>Elementos da obra</h2><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
+    <div class="lat-topo"><h2>Elementos da obra</h2><button class="icone recolher" data-alternar="esq" title="Fechar a lista">«</button><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
     <div class="filtros">
       <input id="buscaElem" type="search" placeholder="Buscar casa, rank, área…">
       <select id="filtroStatus" title="Filtrar por situação no mês">
@@ -68,6 +68,12 @@
         <button id="btnLado" title="Duas competências lado a lado">◫ Lado a lado</button>
         <label id="wrapSync" class="chk-lin"><input type="checkbox" id="chkSync" checked> sincronizar</label>
       </div>
+      <div class="grupo-bt paineis" role="group" aria-label="Painéis">
+        <button data-alternar="esq" title="Abrir ou fechar a lista de elementos">◧ Lista</button>
+        <button data-alternar="dir" title="Abrir ou fechar os indicadores">◨ Indicadores</button>
+        <button data-alternar="editor" title="Abrir ou fechar o painel de lançamento">⬓ Lançamento</button>
+        <button data-alternar="foco" title="Esconder todos os painéis e deixar só a maquete (tecla F)">⛶ Foco</button>
+      </div>
       <div class="grupo-bt opcoes">
         <label class="chk-lin" title="Ao clicar na cena, selecionar a unidade ou o grupo">Seleção
           <select id="selNivel"><option value="folha">Unidade</option><option value="pai">Grupo (rank, pav.)</option><option value="avo">Grupo acima (fase, torre)</option></select></label>
@@ -78,6 +84,7 @@
     </div>
     <div id="cenas" class="cenas">
       <p id="explicaModo" class="explica" title="Clique para recolher ou expandir"></p>
+      <button id="btnSairFoco" class="sair-foco" title="Voltar a mostrar os painéis (tecla F)">✕ Mostrar painéis</button>
       <div id="cenaA" class="cena"><span id="tagA" class="tag-cena"></span></div>
       <div id="cenaB" class="cena oculto"><span id="tagB" class="tag-cena b"></span></div>
       <div id="legenda" class="legenda"></div>
@@ -117,7 +124,7 @@
   </section>
 
   <aside id="painelDir" class="lateral dir">
-    <div class="lat-topo"><h2>Indicadores</h2><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
+    <div class="lat-topo"><h2>Indicadores</h2><button class="icone recolher" data-alternar="dir" title="Fechar os indicadores">»</button><button class="icone fechar-painel" aria-label="Fechar">×</button></div>
     <div id="indicadores" class="indicadores"></div>
   </aside>
 </main>

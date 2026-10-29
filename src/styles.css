@@ -76,7 +76,20 @@ h4 small { font-weight: 400; color: var(--tinta2); }
 @media (max-height: 820px) { .editor { max-height: 36vh; } }
 
 /* corpo */
-.corpo { flex: 1 1 auto; display: grid; grid-template-columns: 280px minmax(0, 1fr) 300px; min-height: 0; }
+.corpo { flex: 1 1 auto; display: grid; grid-template-columns: var(--col-esq, 280px) minmax(0, 1fr) var(--col-dir, 300px); min-height: 0; }
+/* painéis que abrem e fecham para dar foco à maquete */
+.lateral.esq { grid-column: 1; grid-row: 1; }
+.centro { grid-column: 2; grid-row: 1; }
+.lateral.dir { grid-column: 3; grid-row: 1; }
+body.sem-esq { --col-esq: 0px; }
+body.sem-dir { --col-dir: 0px; }
+body.sem-esq .lateral.esq, body.sem-dir .lateral.dir { display: none; }
+body.foco .avisos { display: none !important; }
+.grupo-bt.paineis button.fechado { background: var(--papel2); color: var(--tinta2); text-decoration: line-through; text-decoration-color: rgba(0,0,0,.25); }
+.grupo-bt.paineis button.chamar { box-shadow: 0 0 0 2px var(--alerta); }
+.lat-topo .recolher { margin-left: auto; font-size: 18px; color: var(--tinta2); }
+.sair-foco { position: absolute; top: 8px; right: 8px; z-index: 5; background: rgba(31,42,34,.88); color: #fff; border-color: transparent; }
+body:not(.foco) .sair-foco { display: none; }
 .lateral { background: var(--papel); display: flex; flex-direction: column; min-height: 0; }
 .lateral.esq { border-right: 1px solid var(--linha); }
 .lateral.dir { border-left: 1px solid var(--linha); }
@@ -316,7 +329,9 @@ input.barra::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; b
 
 /* telas médias e pequenas */
 @media (max-width: 1180px) {
-  .corpo { grid-template-columns: 250px minmax(0, 1fr); }
+  .corpo { grid-template-columns: var(--col-esq, 250px) minmax(0, 1fr); }
+  body.sem-dir .lateral.dir { display: flex; }
+  .lateral.dir .recolher { display: none; }
   .lateral.dir { position: fixed; right: 0; top: 0; bottom: 0; width: min(340px, 92vw); z-index: 50; transform: translateX(105%); transition: transform .2s; box-shadow: -8px 0 24px rgba(0,0,0,.15); }
   .lateral.dir.aberto { transform: none; }
   .lateral.dir .fechar-painel { display: inline-block; }
@@ -338,6 +353,8 @@ input.barra::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; b
   .lateral.esq { position: fixed; left: 0; top: 0; bottom: 0; width: min(340px, 92vw); z-index: 50; transform: translateX(-105%); transition: transform .2s; box-shadow: 8px 0 24px rgba(0,0,0,.15); }
   .lateral.esq.aberto { transform: none; }
   .lateral.esq .fechar-painel { display: inline-block; }
+  body.sem-esq .lateral.esq { display: flex; }
+  .lateral.esq .recolher { display: none; }
   .moveis button[data-painel="#painelEsq"] { display: inline-block; }
   .topo { gap: 6px; padding: 6px 8px; }
   .obra-sel select { min-width: 0; max-width: 58vw; }

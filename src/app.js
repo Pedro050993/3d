@@ -310,6 +310,7 @@ export function selecionar(id, { aditivo = false, duplo = false, origem = 'cena'
   renderArvore();
   renderEditor();
   renderIndicadores();
+  if (!app.paineis.editor && app.selecao.length) $('.grupo-bt.paineis [data-alternar=editor]')?.classList.add('chamar');
   const n = $('#arvore .no.sel');
   if (n && origem === 'cena') n.scrollIntoView({ block: 'nearest' });
 }
@@ -521,16 +522,72 @@ function ligarInterface() {
     };
   });
   $$('.lateral .fechar-painel').forEach((b) => { b.onclick = () => b.closest('.lateral').classList.remove('aberto'); });
-  $('#btnRecolherEditor').onclick = () => {
-    document.body.classList.toggle('editor-recolhido');
-    $('#btnRecolherEditor').textContent = document.body.classList.contains('editor-recolhido') ? '▴ Painel de lançamento' : '▾';
-    requestAnimationFrame(() => { app.vA.redimensionar(); app.vB.redimensionar(); });
-  };
+  $('#btnRecolherEditor').onclick = () => alternarPainel('editor');
+  $$('[data-alternar]').forEach((b) => { b.onclick = () => alternarPainel(b.dataset.alternar); });
+  $('#btnSairFoco').onclick = () => alternarPainel('foco');
+  window.addEventListener('keydown', (ev) => {
+    const t = ev.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    if ((ev.key === 'f' || ev.key === 'F') && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !document.querySelector('.dlg-fundo')) alternarPainel('foco');
+  });
+  aplicarPaineis();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') salvarAgora(); });
   window.addEventListener('beforeunload', () => { salvarAgora(); });
   window.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && app.vA.modoColocar) $('#btnCancelarColocar').click();
   });
+}
+
+// ---------------------------------------------------------------- painéis (abrir e fechar)
+
+const PAINEIS_PADRAO = { esq: true, dir: true, editor: true };
+function lerPaineis() {
+  try { return { ...PAINEIS_PADRAO, ...JSON.parse(localStorage.getItem('obras3d:paineis') || '{}') }; } catch { return { ...PAINEIS_PADRAO }; }
+}
+app.paineis = lerPaineis();
+
+function gaveta() {
+  // telas menores usam gavetas no lugar das colunas
+  return { esq: matchMedia('(max-width: 820px)').matches, dir: matchMedia('(max-width: 1180px)').matches };
+}
+
+export function alternarPainel(qual) {
+  const p = app.paineis;
+  if (qual === 'foco') {
+    const emFoco = !p.esq && !p.dir && !p.editor;
+    if (emFoco) Object.assign(p, p.antesFoco || PAINEIS_PADRAO, { antesFoco: null });
+    else Object.assign(p, { antesFoco: { esq: p.esq, dir: p.dir, editor: p.editor }, esq: false, dir: false, editor: false });
+  } else if ((qual === 'esq' || qual === 'dir') && gaveta()[qual]) {
+    const el = $(qual === 'esq' ? '#painelEsq' : '#painelDir');
+    const abrir = !el.classList.contains('aberto');
+    $$('.lateral').forEach((x) => x.classList.remove('aberto'));
+    el.classList.toggle('aberto', abrir);
+    return;
+  } else {
+    p[qual] = !p[qual];
+  }
+  try { localStorage.setItem('obras3d:paineis', JSON.stringify({ esq: p.esq, dir: p.dir, editor: p.editor })); } catch { /* sem armazenamento */ }
+  aplicarPaineis();
+}
+
+function aplicarPaineis() {
+  const p = app.paineis;
+  const b = document.body.classList;
+  b.toggle('sem-esq', !p.esq);
+  b.toggle('sem-dir', !p.dir);
+  b.toggle('editor-recolhido', !p.editor);
+  b.toggle('foco', !p.esq && !p.dir && !p.editor);
+  $$('.grupo-bt.paineis [data-alternar]').forEach((x) => {
+    const k = x.dataset.alternar;
+    const fechado = k === 'foco' ? false : !p[k];
+    x.classList.toggle('fechado', fechado);
+    if (k === 'foco') x.classList.toggle('ativo', !p.esq && !p.dir && !p.editor);
+    x.setAttribute('aria-pressed', String(k === 'foco' ? (!p.esq && !p.dir && !p.editor) : p[k]));
+  });
+  const be = $('#btnRecolherEditor');
+  if (be) be.textContent = p.editor ? '▾' : '▴ Lançamento';
+  if (p.editor) $('.grupo-bt.paineis [data-alternar=editor]')?.classList.remove('chamar');
+  requestAnimationFrame(() => { app.vA?.redimensionar(); app.vB?.redimensionar(); });
 }
 
 function fecharCaminhada() {
